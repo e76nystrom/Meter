@@ -111,32 +111,57 @@ def timeStr():
     return(now.strftime("%b_%d_%Y_%H-%M-%S"))
 
 class LcdShape():
-    def __init__(self, image):
-        self.imageWidth = len(image)
-        self.imageHeight = len(image[0])
+    def __init__(self, array, dbg=False):
+        self.dbg = dbg
+        self.rArray = array
+        self.rArrayH= len(array)
+        self.rArrayW = len(array[0])
+        if self.dbg:
+            print("setRef w %3d h %3d" % (self.rArrayW, self.rArrayH))
+
+        self.tArray = None
+        self.tArrayW = 0
+        self.tArrayH = 0
+
         self.top = 0
         self.bottom = 0
+
+        self.width = 0
         self.height = 0
+
         self.topRow = 0
         self.botRow = 0
 
         self.left = 0
         self.right = 0
-        self.width = 0
+
+    def setTargetArray(self, array):
+        self.tArray = array
+        self.tArrayH = len(array)
+        self.tArrayW = len(array[0])
+        if self.dbg:
+            print("setTarg w %3d h %3d" % (self.tArrayW, self.tArrayH))
 
     def setRows(self, top, bottom):
         self.top = top
         self.bottom = bottom
+        if self.dbg:
+            print("setRows t %3d b %3d" % (self.top, self.bottom))
 
     def setColumns(self, left, right):
         self.left = left
         self.right = right
+        if self.dbg:
+            print("setCols l %3d r %3d" % (self.left, self.right))
 
-    def setSize(self, image):
-        self.width = len(image[0])
-        self.height = h = len(image)
+    def setSize(self):
+        self.height = h = (self.bottom - self.top) + 1
+        self.width = (self.right - self.left) + 1
         self.topRow = int(TOP_SEG * h)
         self.botRow = int(BOTTOM_SEG * h)
+        if self.dbg:
+            print("setSize w %3d h %3d tr %3d br %3d" % \
+                  (self.height, self.width, self.topRow, self.botRow))
 
 class DigitData():
     def __init__(self, strCol, endCol):
@@ -187,10 +212,8 @@ class Meter():
         self.targetFile = None
 
         self.refGray = None
-        self.refGrayArray = None
-        self.rowArray = None
-        self.refCropped = None
         self.refArray = None
+        self.rowArray = None
         self.targetImage = None
         self.targetCropped = None
 
@@ -271,13 +294,13 @@ class Meter():
         refImage = Image.open(self.refFile)
         self.refGray = ImageOps.grayscale(refImage)
         refImage.close()
-        self.refGrayArray = np.asarray(self.refGray)
+        self.refArray = np.asarray(self.refGray)
         if self.dbg0:
-            print(len(self.refGrayArray), len(self.refGrayArray[0]),
-                  self.refGrayArray[0][0])
+            print(len(self.refArray), len(self.refArray[0]),
+                  self.refArray[0][0])
 
-        self.rowArray = np.rint(self.refGrayArray.sum(axis=1) / \
-                                len(self.refGrayArray[0])).astype(int)
+        self.rowArray = np.rint(self.refArray.sum(axis=1) / \
+                                len(self.refArray[0])).astype(int)
 
     def histogram(self):
         if self.plot1:
@@ -371,10 +394,10 @@ class Meter():
             deltaMax = 0
             negDelta = True
             deltaTotal = 0
-            lastPixel = int(self.refGrayArray[row][0])
+            lastPixel = int(self.refArray[row][0])
             startMin = MAX_PIXEL
             endMin = MAX_PIXEL
-            for col, pixel in enumerate(self.refGrayArray[row]):
+            for col, pixel in enumerate(self.refArray[row]):
                 if col < 200:
                     continue
                 pixel = int(pixel)
@@ -416,7 +439,7 @@ class Meter():
                 lastPixel = pixel
 
             if self.plot3:
-                axs[n].plot(self.refGrayArray[row])
+                axs[n].plot(self.refArray[row])
                 axs[n].set_title("Row %3d %3d -> %3d" % (row, left, right))
                 axs[n].plot((left, right), [deltaMin, deltaMax])
                 n += 1
@@ -486,7 +509,7 @@ class Meter():
             deltaMax = 0
             negDelta = True
             deltaTotal = 0
-            lastPixel = int(self.refGrayArray[row][0])
+            lastPixel = int(self.refArray[row][0])
             startMin = MAX_PIXEL
             endMin = MAX_PIXEL
             for col in range(lc - cr, rc + cr):
@@ -543,22 +566,17 @@ class Meter():
             plt.show()
 
     def cropRef(self, lcdShape):
-        self.refCropped = self.refGray.crop((lcdShape.left, lcdShape.top, \
-                                             lcdShape.right, lcdShape.bottom))
-        self.refArray = np.asarray(self.refCropped)
-
         if self.draw:
             self.refGray.save("ref.png", "PNG")
-            self.refCropped.save("refCropped.png", "PNG")
             drawImg = ImageDraw.Draw(self.refGray)
-            drawImg.line(((lcdShape.left,  lcdShape.top), \
-                          (lcdShape.right, lcdShape.top)), fill=WHITE_FILL)
-            drawImg.line(((lcdShape.right, lcdShape.top), \
-                          (lcdShape.right, lcdShape.bottom)), fill=WHITE_FILL)
-            drawImg.line(((lcdShape.right, lcdShape.bottom), \
-                          (lcdShape.left,  lcdShape.bottom)), fill=WHITE_FILL)
-            drawImg.line(((lcdShape.left,  lcdShape.bottom), \
-                          (lcdShape.left,  lcdShape.top)), fill=WHITE_FILL)
+            l = lcdShape.left
+            r = lcdShape.right
+            t = lcdShape.top
+            b = lcdShape.bottom
+            drawImg.line(((l, t), (r, t)), fill=WHITE_FILL)
+            drawImg.line(((r, t), (r, b)), fill=WHITE_FILL)
+            drawImg.line(((r, b), (l, b)), fill=WHITE_FILL)
+            drawImg.line(((l, b), (l, t)), fill=WHITE_FILL)
 
         if self.dbg0:
             print("width %3d height %3d pixels %5d, top %3d bottom %3d" % \
@@ -573,22 +591,26 @@ class Meter():
             fig, axs = plt.subplots(2, sharex=True)
             n = 0
 
+        x0 = lcdShape.left
+        y0 = lcdShape.top
+        l = 0 + x0
+        r = lcdShape.width + x0
+        t = lcdShape.topRow + y0
+        b = lcdShape.botRow + y0
+
         if self.draw:
-            refDraw = self.refCropped.copy()
+            refDraw = self.refGray.copy()
             draw1 = ImageDraw.Draw(refDraw)
-            draw1.line(((0, lcdShape.topRow),
-                        (lcdShape.width, lcdShape.topRow)), fill=BLACK_FILL)
-            draw1.line(((0, lcdShape.botRow),
-                        (lcdShape.width, lcdShape.botRow)), fill=BLACK_FILL)
-            self.refCropped.save("refDraw0.png", "PNG")
+            draw1.line(((l, t), (r, t)), fill=BLACK_FILL)
+            draw1.line(((l, b), (r, b)), fill=BLACK_FILL)
+            refDraw.save("refDraw0.png", "PNG")
 
-            refDraw = self.refCropped.copy()
+            refDraw = self.refGray.copy()
             draw1 = ImageDraw.Draw(refDraw)
 
-        mark = int(MARK_HEIGHT * lcdShape.height)
+        mark = int(lcdShape.height * MARK_HEIGHT)
         for (rowNum, markStart, markEnd) in \
-            ((lcdShape.topRow, 0, mark), \
-             (lcdShape.botRow, mark, lcdShape.height)):
+            ((t, 0, mark), (b, mark, lcdShape.height)):
             if self.dbg0:
                 print("findRefSegments row %2d" % (rowNum))
             row = self.refArray[rowNum]
@@ -602,9 +624,8 @@ class Meter():
             minPixel = MAX_PIXEL
             findMin = True
             segColumn = []
-            for col in range(len(row) - 3, 0, -1):
-                pixel = row[col]
-                # print(i, pixel)
+            for col in range(lcdShape.width - 3, 0, -1):
+                pixel = row[col + x0]
                 if findMin:
                     if pixel < minPixel:
                         minPixel = pixel
@@ -639,7 +660,8 @@ class Meter():
                     fill = BLACK_FILL
                     color = 'b'
                 if self.draw:
-                    draw1.line(((col, markStart), (col, markEnd)), fill=fill)
+                    draw1.line(((col + x0, markStart + y0), \
+                                (col + x0, markEnd + y0)), fill=fill)
                 deltaCol = last - col
                 if flag == 0:
                     flag = DIGIT_COLUMNS
@@ -653,18 +675,23 @@ class Meter():
                         else:
                             en = st - w
                         digitData.append(DigitData(st, en))
-                        m = "%d %3d %3d %2d" % (dig, st, en, w)
-                        if markStart == 0:
-                            if self.draw:
-                                draw1.line(((st, markStart), (st, markEnd)), \
+                        
+                        if self.dbg0:
+                            m = "%d %3d %3d %2d" % (dig, st, en, w)
+                        if (markStart == 0) and self.draw:
+                            draw1.line(((st + x0, markStart + y0), \
+                                        (st + x0, markEnd + y0)), \
+                                       fill=GRAY_FILL)
+                            if dig == MAX_DIGITS:
+                                draw1.line(((en + x0, markStart + y0), \
+                                            (en + x0, markEnd+ y0)), \
                                            fill=GRAY_FILL)
-                                if dig == MAX_DIGITS:
-                                    draw1.line(((en, markStart), \
-                                                (en, markEnd)), fill=GRAY_FILL)
                         dig += 1
                 else:
                     flag -= 1
-                    m = " "
+                    if self.dbg0:
+                        m = " "
+
                 if self.dbg0:
                     print("%2d %3d width %3d %s %d %s" % \
                           (j, col, deltaCol, color, flag, m))
@@ -687,77 +714,80 @@ class Meter():
             refDraw.save("refDraw1.png", "PNG")
 
         if self.draw:
-            refDraw = self.refCropped.copy()
+            refDraw = self.refGray.copy()
             draw1 = ImageDraw.Draw(refDraw)
-
-        if self.dbg0:
-            print("refArray %d %d" % (len(self.refArray), \
-                                      len(self.refArray[0])))
 
         if self.plot5:
             fig, axs = plt.subplots(3, 2, sharex=True)
             axs = list(np.concatenate(axs).flat)
             fig.set_figheight(2 * fig.get_figheight())
             fig.set_figwidth(2 * fig.get_figwidth())
-            n = 0
+            j = 0
 
         for n, data in enumerate(digitData):
             stCol = data.strCol
             enCol = data.endCol
             centerCol = data.col
-            col = self.refArray[:, centerCol]
 
             if self.draw:
-                draw1.line(((centerCol, 0), (centerCol, len(col))), \
+                h = lcdShape.height
+                draw1.line(((centerCol + x0, 0 + y0), \
+                            (centerCol + x0, h + y0)), \
                            fill=BLACK_FILL)
-                draw1.line(((stCol, 0), (stCol, len(col))), fill=WHITE_FILL)
-                draw1.line(((enCol, 0), (enCol, len(col))), fill=WHITE_FILL)
+                draw1.line(((stCol + x0, 0 + y0), \
+                            (stCol + x0, h + y0)), fill=WHITE_FILL)
+                draw1.line(((enCol + x0, 0 + y0), \
+                            (enCol + x0, h + y0)), fill=WHITE_FILL)
 
             if self.dbg0:
                 print("%d st %3d en %3d c %3d" % \
                       (n, stCol, enCol, centerCol), end="")
 
             if self.plot5:
-                axs[n].plot(col)
-                axs[n].set_title("%d Column %d" % (n, centerCol))
+                tmpCol = self.refArray[:,centerCol + x0]
+                axs[j].plot(tmpCol[lcdShape.top:lcdShape.bottom])
+                axs[j].set_title("%d Column %d" % (n, centerCol))
 
             segRows = []
             lastPixel = 0
             findNeg = True
-            for row, pixel in enumerate(col):
+            for row in range(lcdShape.height):
+                pixel = self.refArray[row + y0][centerCol + x0]
                 if findNeg:
                     if (pixel <= DIGIT_THRESHOLD and \
                         lastPixel >= DIGIT_THRESHOLD):
                         strRow = row
                         findNeg = False
                 else:
+                    h = lcdShape.height
                     if (pixel >= DIGIT_THRESHOLD and \
                         lastPixel <= DIGIT_THRESHOLD):
                         segRow = (strRow + row) // 2
+                        segRows.append(segRow)
+
                         if self.dbg0:
-                            print(" %3d" % (segRow))
+                            print(" %3d" % (segRow), end="")
                         if self.draw:
-                            draw1.line(((segRow, 0), \
-                                        (segRow, DIGIT_THRESHOLD)), \
+                            draw1.line(((segRow + x0, 0 + y0), \
+                                        (segRow + x0, h + y0)), \
                                        fill=GRAY_FILL)
                         if self.plot5:
-                            axs[n].plot([segRow, segRow], \
+                            axs[j].plot([segRow, segRow], \
                                         [0, DIGIT_THRESHOLD])
-                        segRows.append(segRow)
+
                         if len(segRows) >= 3:
                             break
                         findNeg = True
                 lastPixel = pixel
                 
             if len(segRows) == 3:
-                data.setSegRows(segRows, len(self.refArray))
+                data.setSegRows(segRows, lcdShape.height)
 
             if self.dbg0:
                 print()
 
             if self.plot5:
-                # axs[n].plot(segRows, pixelVal)
-                n += 1
+                j += 1
 
         if self.plot5:
             if self.save:
@@ -955,7 +985,6 @@ class Meter():
         return targetArray
 
     def readDisplay(self, targetArray, digitData):
-
         if self.plot6:
             fig, axs = plt.subplots(3, 2, sharex=True)
             axs = list(np.concatenate(axs).flat)
@@ -1207,14 +1236,14 @@ class Meter():
         if self.plot1:
             self.histogram()
 
-        t0 = time_ns()
-        lcdShape = LcdShape(self.refGrayArray)
+        # t0 = time_ns()
+        lcdShape = LcdShape(self.refArray, self.dbg0)
         self.verticalBounds(lcdShape)
         self.horizontalBounds(lcdShape)
-        tSetup = time_ns() - t0
-        print("tSetup %d" % (tSetup))
+        # tSetup = time_ns() - t0
+        # print("tSetup %d" % (tSetup))
         self.cropRef(lcdShape)
-        lcdShape.setSize(self.refArray)
+        lcdShape.setSize()
         digitData = self.findRefSegments(lcdShape)
 
         if LINUX:
@@ -1292,7 +1321,6 @@ print(timeStr())
 
 rm = 'rm -f '
 os.system(rm + 'ref.png')
-os.system(rm + 'refCropped.png')
 os.system(rm + 'refDraw*.png')
 os.system(rm + 'targetCropped.png')
 os.system(rm + 'targetDraw*.png')

@@ -1,5 +1,6 @@
 *~
 *.jpg
+*.png
 *.dat
 *.pyproj
 *.sln
