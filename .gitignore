@@ -1,0 +1,13 @@
+*~
+*.jpg
+*.dat
+*.pyproj
+*.sln
+__pycache__
+capture
+*text
+.vs
+build
+tmp*
+#*
+*#
