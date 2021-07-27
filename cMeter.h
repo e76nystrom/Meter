@@ -2,6 +2,8 @@
 #include <stdbool.h>
 
 int dbg0 = true;
+int dbg1 = true;
+int updateEna = false;
 
 void piInit(void);
 
@@ -14,7 +16,8 @@ void piInit(void);
 
 void setThresholds(int col, int digit);
 
-void setTargetArray(uint8_t *array, int n, int w, int h);
+void setRef(uint8_t *array, int n, int w, int h);
+void setTarget(uint8_t *array, int n, int w, int h);
 void setSize(int width, int height);
 void setRows(int top, int bottom);
 void getRows(int *tVal, int *bVal);
@@ -22,9 +25,8 @@ void setColumns(int left, int right);
 void getColumns(int *lVal, int *rVal);
 void printShape(void);
 
-void setDigit(int index);
-void setDigitCol(int strCol, int endCol);
-void setSegRows(int *segRows, int n);
+void setDigitCol(int strCol, int endCol, int index);
+void setSegRows(int *segRows, int n, int index);
 
 void targetBounds(uint8_t *array, int n, int w, int h);
 
