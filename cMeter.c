@@ -284,7 +284,7 @@ void updateRows(int top, int bottom)
    }
    if (1)
     printf("%s updateRows top %3d d %3d bottom %3d d %3d\n",
-	   timeStr(buf, sizeof(buf)),shape.top, deltaT, shape.bottom, deltaB);
+	   timeStr(buf, sizeof(buf)),top, deltaT, bottom, deltaB);
   }
  }
 }
@@ -306,7 +306,7 @@ void updateColumns(int left, int right)
    {
     char buf[24];
     printf("%s updateCols left %3d d %3d right %3d d %3d\n",
-	   timeStr(buf, sizeof(buf)), shape.left, deltaL, shape.right, deltaR);
+	   timeStr(buf, sizeof(buf)), left, deltaL, right, deltaR);
    }
   }
  }
@@ -352,6 +352,8 @@ void setDirRows(int dirStart, int dirEnd, int index)
 	 index, dirStart, dirEnd);
 }
 
+#define SUM_THRESHOLD 90
+
 void targetBounds(uint8_t *array, int n, int w, int h)
 {
  if (dbg0)
@@ -362,6 +364,7 @@ void targetBounds(uint8_t *array, int n, int w, int h)
  int rc = shape.right;
  int rr = (int) (shape.height * 0.20);
  int vBounds[2] = {shape.top, shape.bottom};
+
  if (dbg0)
  {
   printf("left %3d right %3d top %3d bottom %3d\n",
@@ -369,8 +372,8 @@ void targetBounds(uint8_t *array, int n, int w, int h)
   printf("lc %3d rc %3d cr %3d tr %3d br %3d rr %3d\n",
 	 lc, rc, cr, vBounds[0], vBounds[1], rr);
  }
+
  int rows[2];
- int cols[2][2];
  for (int i = 0; i < 2; i++)
  {
   int r = vBounds[i];
@@ -382,10 +385,10 @@ void targetBounds(uint8_t *array, int n, int w, int h)
   {
    int index = row * w;
    int rSum = 0;
+
    for (int k = index + lc - cr; k < index + rc + cr; k++)
-   {
     rSum += array[k];
-   }
+
    rSum /= (rc - lc + 2 * cr);
    if (rSum < minSum)
    {
@@ -396,65 +399,53 @@ void targetBounds(uint8_t *array, int n, int w, int h)
   rows[i] = r0;
   if (dbg0)
    printf("%d row %3d\n", i, r0);
-
-  int deltaTotal = 0;
-  int lastPixel = 0;
-  int index = r0 * w;
-  for (int col = lc - cr; col < lc + cr; col++)
-  {
-   int pixel = array[index + col];
-   int delta = pixel - lastPixel;
-   if (delta != 0)
-   {
-    if (delta < 0)
-    {
-     deltaTotal -= delta;
-    }
-    else
-    {
-     if (deltaTotal > COL_DELTA_THRESHOLD)
-     {
-      cols[i][0] = col;
-      break;
-     }
-     deltaTotal = 0;
-    }
-    if (dbg0)
-     printf("<col %3d pixel %3d delta %3d dTotal %3d\n",
-	    col, pixel, delta, deltaTotal);
-   }
-   lastPixel = pixel;
-  }
-  if (dbg0)
-   printf("\n");
-  
-  deltaTotal = 0;
-  lastPixel = 0;
-  for (int col = rc - cr; col < rc + cr; col++)
-  {
-   int pixel = array[index + col];
-   int delta = pixel - lastPixel;
-   if (delta > 0)
-   {
-    deltaTotal += delta;
-    if (deltaTotal > COL_DELTA_THRESHOLD)
-     break;
-   }
-   else
-   {
-    deltaTotal = 0;
-    cols[i][1] = col;
-   }
-   lastPixel = pixel;
-   if (dbg0)
-    printf(">col %3d pixel %3d delta %3d dTotal %3d\n",
-	   col, pixel, delta, deltaTotal);
-  }
-  if (dbg0)
-   printf("row %3d left %3d right %3d\n", rows[i], cols[i][0], cols[i][1]);
  }
+
  updateRows(rows[0], rows[1]);
- updateColumns(cols[0][0], cols[0][1]);
+ 
+ int cols[2] = {0, 0};
+ int r0 = rows[0];
+ int r1 = rows[1];
+ int tRows = r1 - r0 + 1;
+ int lastSum = 255;
+ for (int col = lc - cr; col < lc + cr; col++)
+ {
+  int cSum = 0;
+  for (int row = r0; row < r1; row++)
+   cSum += array[row * w + col];
+  cSum /= tRows;
+  if (dbg0)
+   printf("col %3d cSum %3d\n", col, cSum);
+  if ((cSum >= SUM_THRESHOLD && lastSum <= SUM_THRESHOLD))
+  {
+   cols[0] = col;
+   break;
+  }
+  lastSum = cSum;
+ }
+ if (dbg0)
+  printf("\n");
+ 
+ lastSum = 255;
+ for (int col = rc - cr; col < rc + cr; col++)
+ {
+  int cSum = 0;
+  for (int row = r0; row < r1; row++)
+   cSum += array[row * w + col];
+  cSum /= tRows;
+  if (dbg0)
+   printf("col %3d cSum %3d\n", col, cSum);
+  if ((cSum >= SUM_THRESHOLD && lastSum <= SUM_THRESHOLD))
+  {
+   cols[0] = col;
+   break;
+  }
+  lastSum = cSum;
+ }
+ if (dbg0)
+  printf("\n");
+ updateColumns(cols[0], cols[1]);
+
  if (dbg0)
   printf("\n");
 }

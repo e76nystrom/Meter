@@ -1428,24 +1428,33 @@ class Meter():
         if self.plot1:
             self.histogram()
 
-        # t0 = time_ns()
         lcdShape = LcdShape(self.refArray, self.dbg0)
         self.verticalBounds(lcdShape)
         self.horizontalBounds(lcdShape)
-        # tSetup = time_ns() - t0
-        # print("tSetup %d" % (tSetup))
         self.cropRef(lcdShape)
         lcdShape.setSize()
-        digitData = self.findRefSegments(lcdShape)
 
         if LINUX:
             cm.cvar.dbg0 = int(self.cDbg0)
             cm.cvar.dbg1 = int(self.cDbg1)
-            cm.cvar.updateEna = int(self.update)
             cm.setThresholds(COL_DELTA_THRESHOLD, DIGIT_THRESHOLD)
             cm.setSize(lcdShape.width, lcdShape.height)
             cm.setRows(lcdShape.top, lcdShape.bottom)
             cm.setColumns(lcdShape.left, lcdShape.right)
+
+            cm.cvar.updateEna = int(True)
+            cm.targetBounds(self.refArray.ravel(), \
+                                len(self.refArray[0]), len(self.refArray))
+            (lcdShape.top, lcdShape.bottom) = cm.getRows()
+            (lcdShape.left, lcdShape.right) = cm.getColumns()
+            print("t %3d b %3d r %3d l %3d" % \
+                  (lcdShape.top, lcdShape.bottom, \
+                   lcdShape.left, lcdShape.right))
+            cm.cvar.updateEna = int(self.update)
+
+        digitData = self.findRefSegments(lcdShape)
+
+        if LINUX:
             for n, data in enumerate(digitData):
                 cm.setDigitCol(data.strCol, data.endCol, n)
                 cm.setSegRows(np.array(data.segRows, np.int32), n)
@@ -1468,7 +1477,7 @@ class Meter():
                     self.targetFile = self.refFile
 
             targetArray = self.openTarget(self.targetFile, lcdShape)
-            if LINUX and False:
+            if LINUX:
                 t0 = time_ns()
                 cm.targetBounds(targetArray.ravel(), \
                                 len(targetArray[0]), len(targetArray))
