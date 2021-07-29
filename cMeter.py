@@ -98,6 +98,9 @@ def setDigitCol(strCol, endCol, index):
 def setSegRows(segRows, index):
     return _cMeter.setSegRows(segRows, index)
 
+def setDirRows(dirStart, dirRange, index):
+    return _cMeter.setDirRows(dirStart, dirRange, index)
+
 def targetBounds(array, w, h):
     return _cMeter.targetBounds(array, w, h)
 

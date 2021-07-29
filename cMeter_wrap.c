@@ -3788,6 +3788,43 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_setDirRows(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  int arg1 ;
+  int arg2 ;
+  int arg3 ;
+  int val1 ;
+  int ecode1 = 0 ;
+  int val2 ;
+  int ecode2 = 0 ;
+  int val3 ;
+  int ecode3 = 0 ;
+  PyObject *swig_obj[3] ;
+  
+  if (!SWIG_Python_UnpackTuple(args, "setDirRows", 3, 3, swig_obj)) SWIG_fail;
+  ecode1 = SWIG_AsVal_int(swig_obj[0], &val1);
+  if (!SWIG_IsOK(ecode1)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode1), "in method '" "setDirRows" "', argument " "1"" of type '" "int""'");
+  } 
+  arg1 = (int)(val1);
+  ecode2 = SWIG_AsVal_int(swig_obj[1], &val2);
+  if (!SWIG_IsOK(ecode2)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "setDirRows" "', argument " "2"" of type '" "int""'");
+  } 
+  arg2 = (int)(val2);
+  ecode3 = SWIG_AsVal_int(swig_obj[2], &val3);
+  if (!SWIG_IsOK(ecode3)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "setDirRows" "', argument " "3"" of type '" "int""'");
+  } 
+  arg3 = (int)(val3);
+  setDirRows(arg1,arg2,arg3);
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_targetBounds(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   uint8_t *arg1 = (uint8_t *) 0 ;
@@ -4095,6 +4132,7 @@ static PyMethodDef SwigMethods[] = {
 	 { "printShape", _wrap_printShape, METH_NOARGS, NULL},
 	 { "setDigitCol", _wrap_setDigitCol, METH_VARARGS, NULL},
 	 { "setSegRows", _wrap_setSegRows, METH_VARARGS, NULL},
+	 { "setDirRows", _wrap_setDirRows, METH_VARARGS, NULL},
 	 { "targetBounds", _wrap_targetBounds, METH_VARARGS, NULL},
 	 { "loopInit", _wrap_loopInit, METH_NOARGS, NULL},
 	 { "readDisplay", _wrap_readDisplay, METH_O, NULL},

@@ -120,7 +120,7 @@ typedef struct
  int rowRange;
 
  int dirStart;
- int dirRange;
+ int dirEnd;
 } T_DIGIT_DATA, *P_DIGIT_DATA;
 
 #define TOP_SEG 0.3
@@ -340,8 +340,16 @@ void setSegRows(int *segRows, int n, int index)
  digit->topRow = (segRows[0] + segRows[1]) / 2;
  digit->botRow = (segRows[1] + segRows[2]) / 2;
  digit->rowRange = (segRows[1] - segRows[0]) / 2 + 2;
- digit->dirStart = segRows[2];
- digit->dirRange = ((shape.height - digit->dirStart) * 7) / 8;
+}
+
+void setDirRows(int dirStart, int dirEnd, int index)
+{
+ P_DIGIT_DATA digit = &digitData[index];
+ digit->dirStart = dirStart;
+ digit->dirEnd = dirEnd;
+ if (dbg0)
+  printf("setDirRows %d dirStart %2d dirEnd %2d\n",
+	 index, dirStart, dirEnd);
 }
 
 void targetBounds(uint8_t *array, int n, int w, int h)
@@ -569,12 +577,13 @@ int readDirection(uint8_t *array, int n, int index)
  P_DIGIT_DATA data = &digitData[index];
  int w = shape.tArrayW;
  int col = shape.right - data->col;
- int startRow = data->dirStart + shape.top;
- int rowRange = data->dirRange;
+ int t = shape.top;
+ int startRow = data->dirStart + t;
+ int endRow = data->dirEnd + t;
  bool skip = true;
  int lastPixel = 0;
  int result = 0;
- for (int row = startRow; row < startRow + rowRange; row++)
+ for (int row = startRow; row < endRow; row++)
  {
   int pixel = array[row * w + col];
   if (skip)

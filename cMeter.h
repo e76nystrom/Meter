@@ -27,6 +27,7 @@ void printShape(void);
 
 void setDigitCol(int strCol, int endCol, int index);
 void setSegRows(int *segRows, int n, int index);
+void setDirRows(int dirStart, int dirRange, int index);
 
 void targetBounds(uint8_t *array, int n, int w, int h);
 

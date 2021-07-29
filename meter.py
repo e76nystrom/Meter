@@ -177,7 +177,7 @@ class DigitData():
         self.botRow = 0
         self.rowRange = 0
         self.dirStart = 0
-        self.dirRange = 0
+        self.dirEnd = 0
 
     def setSegRows(self, segRows, maxRow):
         self.segRows = segRows
@@ -185,8 +185,10 @@ class DigitData():
         self.topRow = (segRows[0] + segRows[1]) // 2
         self.botRow = (segRows[1] + segRows[2]) // 2
         self.rowRange = (segRows[1] - segRows[0]) // 2 + 2
-        self.dirStart = segRows[2]
-        self.dirRange = ((maxRow - self.dirStart) * 7) // 8
+
+    def setDirRows(self, dirStart, dirEnd):
+        self.dirStart = dirStart
+        self.dirEnd = dirEnd
 
 class Meter():
     def __init__(self):
@@ -948,6 +950,25 @@ class Meter():
             if len(segRows) == 3:
                 data.setSegRows(segRows, lcdShape.height)
 
+                dirStart = segRows[2]
+                for row in range(dirStart, lcdShape.height):
+                    pixel = self.refArray[row + y0][x0 - centerCol]
+                    if pixel > DIGIT_THRESHOLD:
+                        dirStart = row
+                        break
+
+                dirEnd = lcdShape.height
+                lastPixel = MAX_PIXEL
+                for row in range(dirEnd, dirStart, -1):
+                    pixel = self.refArray[row + y0][x0 - centerCol]
+                    if (pixel >= DIGIT_THRESHOLD) and \
+                       (lastPixel <= DIGIT_THRESHOLD):
+                        dirEnd = row - 1
+                        break
+                    lastPixel = pixel
+
+                data.setDirRows(dirStart, dirEnd)
+                    
             if self.dbg0:
                 print()
 
@@ -1095,11 +1116,11 @@ class Meter():
     def readDirection(self, imageArray, lcdShape, data):
         col = lcdShape.right - data.col
         startRow = data.dirStart + lcdShape.top
-        rowRange = data.dirRange
+        endRow = data.dirEnd + lcdShape.top
         skip = True
         lastPixel = 0
         result = 0
-        for row in range(startRow, startRow + rowRange):
+        for row in range(startRow, endRow):
             pixel = imageArray[row][col]
             # print("%2d pixel %3d skip %s" % (row, pixel, skip))
             if skip:
@@ -1172,7 +1193,8 @@ class Meter():
         dirVal = 0
         for i, data in enumerate(digitData):
             if self.plot7:
-                tmpCol = targetArray[:, data.col + lcdShape.left]
+                x0 = lcdShape.right
+                tmpCol = targetArray[:, x0 - data.col]
                 axs7[j].plot(tmpCol[lcdShape.top:lcdShape.bottom])
                 axs7[j].plot([0, data.maxRow], \
                              [DIGIT_THRESHOLD, DIGIT_THRESHOLD])
@@ -1188,10 +1210,9 @@ class Meter():
             if self.plot6:
                 x0 = lcdShape.right
                 y0 = lcdShape.top
-                axs[n].plot(targetArray[data.dirStart + y0: \
-                                        data.dirStart + data.dirRange + y0, \
+                axs[n].plot(targetArray[data.dirStart + y0:data.dirEnd + y0, \
                                         x0 - data.col])
-                axs[n].plot([0, data.dirRange], \
+                axs[n].plot([0, data.dirEnd - data.dirStart], \
                             [DIGIT_THRESHOLD, DIGIT_THRESHOLD])
                 axs[n].set_title("Direction %d col %d" % (i, data.col))
                 n += 1
@@ -1234,7 +1255,7 @@ class Meter():
         botRow = data.botRow + y0
         rowRange = data.rowRange
         dirT = data.dirStart + y0
-        dirR = data.dirRange
+        dirB = data.dirEnd + y0
         d(((col, topRow), (col+colRange, topRow)), fill=BLACK_FILL)
         d(((col, topRow), (col-colRange, topRow)), fill=WHITE_FILL)
         d(((col, botRow), (col+colRange, botRow)), fill=WHITE_FILL)
@@ -1244,7 +1265,7 @@ class Meter():
         d(((col, topRow), (col, topRow+rowRange)), fill=WHITE_FILL)
         d(((col, botRow), (col, botRow+rowRange)), fill=BLACK_FILL)
 
-        d(((col, dirT), (col, dirT + dirR)), fill=WHITE_FILL)
+        d(((col, dirT), (col, dirB)), fill=WHITE_FILL)
 
     def updateReading(self, val):
         if val != self.lastVal:
@@ -1428,6 +1449,7 @@ class Meter():
             for n, data in enumerate(digitData):
                 cm.setDigitCol(data.strCol, data.endCol, n)
                 cm.setSegRows(np.array(data.segRows, np.int32), n)
+                cm.setDirRows(data.dirStart, data.dirEnd, n)
             cm.loopInit();
                            
         if self.loop:
