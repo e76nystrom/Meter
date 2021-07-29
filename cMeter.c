@@ -327,7 +327,7 @@ void setDigitCol(int strCol, int endCol, int index)
  digit->strCol = strCol;
  digit->endCol = endCol;
  digit->col = (strCol + endCol) / 2;
- digit->colRange = (strCol - endCol) / 2;
+ digit->colRange = (endCol - strCol) / 2;
 }
 
 void setSegRows(int *segRows, int n, int index)
@@ -520,10 +520,10 @@ void testDecode(void)
 int readSegments(uint8_t *array, int n, int index)
 {
  P_DIGIT_DATA data = &digitData[index];
- int x0 = shape.left;
+ int x0 = shape.right;
  int y0 = shape.top;
  int w = shape.tArrayW;
- int col = data->col + x0;
+ int col = x0 - data->col;
  int cr = data->colRange;
 
  int tr = (data->topRow + y0) * w;
@@ -568,7 +568,7 @@ int readDirection(uint8_t *array, int n, int index)
 {
  P_DIGIT_DATA data = &digitData[index];
  int w = shape.tArrayW;
- int col = data->col + shape.left;
+ int col = shape.right - data->col;
  int startRow = data->dirStart + shape.top;
  int rowRange = data->dirRange;
  bool skip = true;
