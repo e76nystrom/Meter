@@ -110,10 +110,10 @@ T_LCD_SHAPE shape;
 
 typedef struct
 {
- int strCol;
- int endCol;
- int col;
- int colRange;
+ int strCol[2];
+ int endCol[2];
+ int col[2];
+ int colRange[2];
 
  int segRows[SEG_ROWS];
  int maxRow;
@@ -322,14 +322,14 @@ void printShape(void)
 	shape.width, shape.height, shape.width * shape.height);
 }
   
-void setDigitCol(int strCol, int endCol, int index)
+void setDigitCol(int strCol, int endCol, int index, int n)
 {
 // printf("strcol %3d endCol %3d\n", strCol, endCol);
  P_DIGIT_DATA digit = &digitData[index];
- digit->strCol = strCol;
- digit->endCol = endCol;
- digit->col = (strCol + endCol) / 2;
- digit->colRange = (endCol - strCol) / 2;
+ digit->strCol[n] = strCol;
+ digit->endCol[n] = endCol;
+ digit->col[n] = (strCol + endCol) / 2;
+ digit->colRange[n] = (endCol - strCol) / 2;
 }
 
 void setSegRows(int *segRows, int n, int index)
@@ -440,12 +440,12 @@ void targetBounds(uint8_t *array, int n, int w, int h)
 //{
 //}
 
-void setDigitData(P_DIGIT_DATA data, int st, int en)
+void setDigitData(P_DIGIT_DATA data, int st, int en, int n)
 {
- data->strCol = st;
- data->endCol = en;
- data->col = (st + en) / 2;
- data->colRange = (en - st) /2;
+ data->strCol[n] = st;
+ data->endCol[n] = en;
+ data->col[n] = (st + en) / 2;
+ data->colRange[n] = (en - st) /2;
 }
 
 #define MAX_COL 24
@@ -525,7 +525,7 @@ void findRefSegments(uint8_t *array, int n, int w)
     }
     else
      en = st + w0;
-    setDigitData(data, st, en);
+    setDigitData(data, st, en, i);
     data += 1;
    }
    else
@@ -553,8 +553,9 @@ void findRefSegments(uint8_t *array, int n, int w)
    {
     if (dbg0)
      printf("dig %d st %3d en %3d col %3d cr %2d segRow ",
-	    j, data->strCol, data->endCol, data->col, data->colRange);
-    int centerCol = x0 - data->col;
+	    j, data->strCol[i], data->endCol[i],
+	    data->col[i], data->colRange[i]);
+    int centerCol = x0 - data->col[i];
     int *segRows = &data->segRows[0];
     lastPixel = MAX_PIXEL;
     bool skip = true;
@@ -707,31 +708,36 @@ int readSegments(uint8_t *array, int n, int index)
  int x0 = shape.right;
  int y0 = shape.top;
  int w = shape.tArrayW;
- int col = x0 - data->col;
- int cr = data->colRange;
 
  int tr = (data->topRow + y0) * w;
  int br = (data->botRow + y0) * w;
- int rr = data->rowRange;
 
  int result = 0;
- for (int i = 0; i < cr; i++)
+ int colT = x0 - data->col[0];
+ int crT = data->colRange[0];
+ for (int i = 0; i < crT; i++)
  {
-  if (array[tr + col + i] < DIGIT_THRESHOLD)
+  if (array[tr + colT + i] < DIGIT_THRESHOLD)
    result |= 0x02;
 
-  if (array[tr + col - i] < DIGIT_THRESHOLD)
+  if (array[tr + colT - i] < DIGIT_THRESHOLD)
    result |= 0x20;
+ }
 
-  if (array[br + col + i] < DIGIT_THRESHOLD)
+ int colB = x0 - data->col[1];
+ int crB = data->colRange[1];
+ for (int i = 0; i < crB; i++)
+ {
+  if (array[br + colB + i] < DIGIT_THRESHOLD)
    result |= 0x04;
 
-  if (array[br + col - i] < DIGIT_THRESHOLD)
+  if (array[br + colB - i] < DIGIT_THRESHOLD)
    result |= 0x10;
  }
 
- int trc = tr + col;
- int brc = br + col;
+ int trc = tr + colT;
+ int brc = br + colB;
+ int rr = data->rowRange;
  for (int i = 0; i < rr; i++)
  {
   int r0 = i * w;
@@ -752,7 +758,7 @@ int readDirection(uint8_t *array, int n, int index)
 {
  P_DIGIT_DATA data = &digitData[index];
  int w = shape.tArrayW;
- int col = shape.right - data->col;
+ int col = shape.right - data->col[0];
  int t = shape.top;
  int startRow = data->dirStart + t;
  int endRow = data->dirEnd + t;

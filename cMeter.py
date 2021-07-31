@@ -92,8 +92,8 @@ def getColumns():
 def printShape():
     return _cMeter.printShape()
 
-def setDigitCol(strCol, endCol, index):
-    return _cMeter.setDigitCol(strCol, endCol, index)
+def setDigitCol(strCol, endCol, index, n):
+    return _cMeter.setDigitCol(strCol, endCol, index, n)
 
 def setSegRows(segRows, index):
     return _cMeter.setSegRows(segRows, index)

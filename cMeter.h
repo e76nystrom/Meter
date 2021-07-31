@@ -25,7 +25,7 @@ void setColumns(int left, int right);
 void getColumns(int *lVal, int *rVal);
 void printShape(void);
 
-void setDigitCol(int strCol, int endCol, int index);
+void setDigitCol(int strCol, int endCol, int index, int n);
 void setSegRows(int *segRows, int n, int index);
 void setDirRows(int dirStart, int dirRange, int index);
 

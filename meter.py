@@ -170,6 +170,7 @@ class DigitData():
         self.strCol = [0, 0]
         self.endCol = [0, 0]
         self.col = [0, 0]
+        self.colRange = [0, 0]
         self.setCol(strCol, endCol, 0)
 
         self.segRows = None
@@ -184,8 +185,7 @@ class DigitData():
         self.strCol[index] = strCol
         self.endCol[index] = endCol
         self.col[index] = (strCol + endCol) // 2
-        if index == 0:
-            self.colRange = (endCol - strCol) // 2
+        self.colRange[index] = (endCol - strCol) // 2
 
     def setSegRows(self, segRows, maxRow):
         self.segRows = segRows
@@ -1080,7 +1080,7 @@ class Meter():
         y0 = lcdShape.top
         colT = x0 - data.col[0]
         colB = x0 - data.col[1]
-        colRange = data.colRange
+        colRange = data.colRange[0]
         
         topRow = data.topRow + y0
         botRow = data.botRow + y0
@@ -1269,16 +1269,16 @@ class Meter():
         y0 = lcdShape.top
         colT = lcdShape.right - data.col[0]
         colB = lcdShape.right - data.col[1]
-        colRange = data.colRange
+        colRangeT = data.colRange[0]
         topRow = data.topRow + y0
         botRow = data.botRow + y0
         rowRange = data.rowRange
         dirT = data.dirStart + y0
         dirB = data.dirEnd + y0
-        d(((colT, topRow), (colT+colRange, topRow)), fill=BLACK_FILL)
-        d(((colT, topRow), (colT-colRange, topRow)), fill=WHITE_FILL)
-        d(((colB, botRow), (colB+colRange, botRow)), fill=WHITE_FILL)
-        d(((colB, botRow), (colB-colRange, botRow)), fill=BLACK_FILL)
+        d(((colT, topRow), (colT+colRangeT, topRow)), fill=BLACK_FILL)
+        d(((colT, topRow), (colT-colRangeT, topRow)), fill=WHITE_FILL)
+        d(((colB, botRow), (colB+colRangeT, botRow)), fill=WHITE_FILL)
+        d(((colB, botRow), (colB-colRangeT, botRow)), fill=BLACK_FILL)
 
         d(((colT, topRow), (colT, topRow-rowRange)), fill=BLACK_FILL)
         d(((colT, topRow), (colT, topRow+rowRange)), fill=WHITE_FILL)
@@ -1477,7 +1477,8 @@ class Meter():
         if LINUX:
             cm.findRefSegments(self.refArray.ravel(), len(self.refArray[0]))
             for n, data in enumerate(digitData):
-                cm.setDigitCol(data.strCol[0], data.endCol[0], n)
+                for j in (0, 1):
+                    cm.setDigitCol(data.strCol[0], data.endCol[0], n, j)
                 cm.setSegRows(np.array(data.segRows, np.int32), n)
                 cm.setDirRows(data.dirStart, data.dirEnd, n)
             cm.loopInit();
