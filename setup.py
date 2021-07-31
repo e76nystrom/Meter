@@ -15,8 +15,8 @@ except AttributeError:
 
 # cMeter extension module
 _cMeter = Extension("_cMeter",
-                     ["cMeter.i","cMeter.c"],
-                     include_dirs = [numpy_include],
+                    ["cMeter.i","cMeter.c"],
+                    include_dirs = [numpy_include],
 )
 
 # NumyTypemapTests setup

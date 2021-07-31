@@ -30,6 +30,7 @@ void setSegRows(int *segRows, int n, int index);
 void setDirRows(int dirStart, int dirRange, int index);
 
 void targetBounds(uint8_t *array, int n, int w, int h);
+void findRefSegments(uint8_t *array, int n, int w);
 
 void loopInit(void);
 

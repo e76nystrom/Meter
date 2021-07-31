@@ -3882,6 +3882,55 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_findRefSegments(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  uint8_t *arg1 = (uint8_t *) 0 ;
+  int arg2 ;
+  int arg3 ;
+  PyArrayObject *array1 = NULL ;
+  int is_new_object1 = 0 ;
+  int val3 ;
+  int ecode3 = 0 ;
+  PyObject *swig_obj[2] ;
+  
+  if (!SWIG_Python_UnpackTuple(args, "findRefSegments", 2, 2, swig_obj)) SWIG_fail;
+  {
+    npy_intp size[1] = {
+      -1 
+    };
+    array1 = obj_to_array_contiguous_allow_conversion(swig_obj[0],
+      NPY_UINT8,
+      &is_new_object1);
+    if (!array1 || !require_dimensions(array1, 1) ||
+      !require_size(array1, size, 1)) SWIG_fail;
+    arg1 = (uint8_t*) array_data(array1);
+    arg2 = (int) array_size(array1,0);
+  }
+  ecode3 = SWIG_AsVal_int(swig_obj[1], &val3);
+  if (!SWIG_IsOK(ecode3)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "findRefSegments" "', argument " "3"" of type '" "int""'");
+  } 
+  arg3 = (int)(val3);
+  findRefSegments(arg1,arg2,arg3);
+  resultobj = SWIG_Py_Void();
+  {
+    if (is_new_object1 && array1)
+    {
+      Py_DECREF(array1); 
+    }
+  }
+  return resultobj;
+fail:
+  {
+    if (is_new_object1 && array1)
+    {
+      Py_DECREF(array1); 
+    }
+  }
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_loopInit(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   
@@ -4134,6 +4183,7 @@ static PyMethodDef SwigMethods[] = {
 	 { "setSegRows", _wrap_setSegRows, METH_VARARGS, NULL},
 	 { "setDirRows", _wrap_setDirRows, METH_VARARGS, NULL},
 	 { "targetBounds", _wrap_targetBounds, METH_VARARGS, NULL},
+	 { "findRefSegments", _wrap_findRefSegments, METH_VARARGS, NULL},
 	 { "loopInit", _wrap_loopInit, METH_NOARGS, NULL},
 	 { "readDisplay", _wrap_readDisplay, METH_O, NULL},
 	 { "loopProcess", _wrap_loopProcess, METH_O, NULL},

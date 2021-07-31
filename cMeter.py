@@ -104,6 +104,9 @@ def setDirRows(dirStart, dirRange, index):
 def targetBounds(array, w, h):
     return _cMeter.targetBounds(array, w, h)
 
+def findRefSegments(array, w):
+    return _cMeter.findRefSegments(array, w)
+
 def loopInit():
     return _cMeter.loopInit()
 
