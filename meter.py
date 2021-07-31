@@ -758,6 +758,7 @@ class Meter():
 
         mark = int(lcdShape.height * MARK_HEIGHT)
         index = 0
+        digitData= []
         for (rowNum, markStart, markEnd) in \
             ((t, 0, mark), (b, mark, lcdShape.height)):
             if self.dbg0:
@@ -793,7 +794,6 @@ class Meter():
             flag = INITIAL_COLUMN_INDEX
             dig = 0
             last = 0
-            digitData= []
             for col in segColumn:
                 if (j & 1) == 0:
                     fill = WHITE_FILL
@@ -818,7 +818,7 @@ class Meter():
                         if index == 0:
                             digitData.append(DigitData(st, en))
                         else:
-                            digitData[dig].segCol(st, en, index)
+                            digitData[dig].setCol(st, en, index)
                             
                         if self.dbg0:
                             m = "%d st %3d en %3d w %2d g %2d" % \
@@ -843,6 +843,7 @@ class Meter():
                           (j, col, x0-col, deltaCol, color, flag, m))
                 j += 1
                 last = col
+            index += 1
 
             if self.dbg0:
                 print()
@@ -870,7 +871,7 @@ class Meter():
                     yVal.append(lo)
                 axs[n].plot(xVal, yVal)        
                 n += 1    
-
+        
         if self.plot4:
             if self.save:
                 fig.savefig("plot4.png")
@@ -891,9 +892,9 @@ class Meter():
             j = 0
 
         for n, data in enumerate(digitData):
-            stCol = data.strCol[index]
-            enCol = data.endCol[index]
-            centerCol = data.col[index]
+            stCol = data.strCol[0]
+            enCol = data.endCol[0]
+            centerCol = data.col[0]
 
             if self.draw:
                 h = lcdShape.height
@@ -1266,23 +1267,24 @@ class Meter():
 
     def readDraw(self, d, lcdShape, data):
         y0 = lcdShape.top
-        col = lcdShape.right - data.col[0]
+        colT = lcdShape.right - data.col[0]
+        colB = lcdShape.right - data.col[1]
         colRange = data.colRange
         topRow = data.topRow + y0
         botRow = data.botRow + y0
         rowRange = data.rowRange
         dirT = data.dirStart + y0
         dirB = data.dirEnd + y0
-        d(((col, topRow), (col+colRange, topRow)), fill=BLACK_FILL)
-        d(((col, topRow), (col-colRange, topRow)), fill=WHITE_FILL)
-        d(((col, botRow), (col+colRange, botRow)), fill=WHITE_FILL)
-        d(((col, botRow), (col-colRange, botRow)), fill=BLACK_FILL)
+        d(((colT, topRow), (colT+colRange, topRow)), fill=BLACK_FILL)
+        d(((colT, topRow), (colT-colRange, topRow)), fill=WHITE_FILL)
+        d(((colB, botRow), (colB+colRange, botRow)), fill=WHITE_FILL)
+        d(((colB, botRow), (colB-colRange, botRow)), fill=BLACK_FILL)
 
-        d(((col, topRow), (col, topRow-rowRange)), fill=BLACK_FILL)
-        d(((col, topRow), (col, topRow+rowRange)), fill=WHITE_FILL)
-        d(((col, botRow), (col, botRow+rowRange)), fill=BLACK_FILL)
+        d(((colT, topRow), (colT, topRow-rowRange)), fill=BLACK_FILL)
+        d(((colT, topRow), (colT, topRow+rowRange)), fill=WHITE_FILL)
+        d(((colT, botRow), (colT, botRow+rowRange)), fill=BLACK_FILL)
 
-        d(((col, dirT), (col, dirB)), fill=WHITE_FILL)
+        d(((colT, dirT), (colT, dirB)), fill=WHITE_FILL)
 
     def updateReading(self, val):
         if val != self.lastVal:
