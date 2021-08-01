@@ -184,7 +184,6 @@ class DigitData():
         self.setCol(strCol, endCol, 0)
 
         self.segRows = None
-        self.maxRow = 0
         self.topRow = 0
         self.botRow = 0
         self.rowRange = 0
@@ -209,20 +208,20 @@ class DigitData():
 
     def get(self, index):
         for i in range(2):
-            (strCol, encCol) = cm.getDigitColumn(index, i)
-            self.setCol(strCol, endCol)
+            (strCol, endCol) = cm.getDigitCol(index, i)
+            self.setCol(strCol, endCol, i)
         segRows = np.empty(3, np.int32)
-        cm.getSegRows(setRows, index)
+        cm.getSegRows(segRows, index)
         self.setSegRows(list(segRows))
         (dirStart, dirEnd) = cm.getDirRows(index)
         self.setDirRows(dirStart, dirEnd)
 
     def print(self):
-        print("st %3d %3d en %3d %3d seg %2d %2d %2d dir %2d %2d" % \
+        print("st %3d %3d en %3d %3d seg %2d %2d %2d dir %2d %2d " % \
 	      (self.strCol[0], self.strCol[1], \
 	       self.endCol[0], self.endCol[1], \
 	       self.segRows[0], self.segRows[1], self.segRows[2], \
-	       self.dirStart, self.dirEnd))
+	       self.dirStart, self.dirEnd), end="")
 
     def printC(self):
         print("col %3d %3d cr %2d %2d tr %2d br %2d rr %2d dir %2d %2d" % \
@@ -350,6 +349,9 @@ class Meter():
 
         if self.refFile is None:
             self.refFile = "cRef-800x600-1.jpg"
+
+        if LINUX:
+            self.save = True
 
     def openRef(self):
         refImage = Image.open(self.refFile)
@@ -849,6 +851,61 @@ class Meter():
         else:
             plt.show()
 
+    def refDraw(self, image, lcdShape, seg, digitData):
+        x0 = lcdShape.right
+        y0 = lcdShape.top
+        l = x0 - lcdShape.width
+        r = x0
+        t = lcdShape.topRow + y0
+        b = lcdShape.botRow + y0
+
+        refDraw = self.refGray.copy()
+        draw1 = ImageDraw.Draw(refDraw)
+        draw1.line(((l, t), (r, t)), fill=BLACK_FILL)
+        draw1.line(((l, b), (r, b)), fill=BLACK_FILL)
+        refDraw.save("refDraw0.png", "PNG")
+
+        refDraw = self.refGray.copy()
+        draw1 = ImageDraw.Draw(refDraw)
+        d = draw1.line
+
+        h = lcdShape.height
+        mark = int(h * MARK_HEIGHT)
+        i = 0
+        for (markStart, markEnd) in ((0, mark), (mark, h)):
+        
+            segColumn = seg[i]
+            for j, col in enumerate(segColumn):
+                fill = WHITE_FILL if (j & 1) == 0 else BLACK_FILL
+                d(((x0 - col, markStart + y0), \
+                   (x0 - col, markEnd + y0)), fill=fill)
+
+            for dig, data in enumerate(digitData):
+                st = data.strCol[i]
+                en = data.endCol[i]
+                centerCol = data.col[i]
+
+                if (markStart == 0):
+                    d(((x0 - st, markStart + y0), \
+                       (x0 - st, markEnd + y0)), fill=GRAY_FILL)
+                    if dig == MAX_DIGITS:
+                        d(((x0 - en, markStart + y0), \
+                           (x0 - en, markEnd+ y0)), fill=GRAY_FILL)
+
+                d(((x0 - centerCol, 0 + y0), \
+                   (x0 - centerCol, h + y0)), fill=BLACK_FILL)
+                d(((x0 - st, 0 + y0), \
+                   (x0 - st, h + y0)), fill=WHITE_FILL)
+                d(((x0 - en, 0 + y0), \
+                   (x0 - en, h + y0)), fill=WHITE_FILL)
+
+                for row in data.segRows:
+                    d(((lcdShape.left, y0 + row), \
+                       (lcdShape.right, y0 + row)), fill=GRAY_FILL)
+            i += 1
+
+        refDraw.save("refDraw2.png", "PNG")
+
     # find location of segments on the reference array
     def findRefSegments(self, lcdShape):
         x0 = lcdShape.right
@@ -858,37 +915,26 @@ class Meter():
         t = lcdShape.topRow + y0
         b = lcdShape.botRow + y0
 
-        if False and self.plot4:
-            fig, axs = plt.subplots(2, sharex=True)
-            fig.set_figwidth(3 * fig.get_figwidth())
-            fig.set_figheight(2 * fig.get_figheight())
-            n = 0
+        # if self.draw:
+        #     refDraw = self.refGray.copy()
+        #     draw1 = ImageDraw.Draw(refDraw)
+        #     draw1.line(((l, t), (r, t)), fill=BLACK_FILL)
+        #     draw1.line(((l, b), (r, b)), fill=BLACK_FILL)
+        #     refDraw.save("refDraw0.png", "PNG")
 
-        if self.draw:
-            refDraw = self.refGray.copy()
-            draw1 = ImageDraw.Draw(refDraw)
-            draw1.line(((l, t), (r, t)), fill=BLACK_FILL)
-            draw1.line(((l, b), (r, b)), fill=BLACK_FILL)
-            refDraw.save("refDraw0.png", "PNG")
+        #     refDraw = self.refGray.copy()
+        #     draw1 = ImageDraw.Draw(refDraw)
 
-            refDraw = self.refGray.copy()
-            draw1 = ImageDraw.Draw(refDraw)
-
-        mark = int(lcdShape.height * MARK_HEIGHT)
+        # mark = int(lcdShape.height * MARK_HEIGHT)
         index = 0
         digitData = []
         seg = []
-        for (rowNum, markStart, markEnd) in \
-            ((t, 0, mark), (b, mark, lcdShape.height)):
+        # for (rowNum, markStart, markEnd) in \
+        #     ((t, 0, mark), (b, mark, lcdShape.height)):
+        for rowNum in (t, b):
             if self.dbg0:
                 print("findRefSegments row %2d" % (rowNum))
             row = self.refArray[rowNum]
-
-            if False and self.plot4:
-                axs[n].plot(row[lcdShape.left:x0])
-                axs[n].set_title("Ref Row %d" % (rowNum))
-                axs[n].plot([0, lcdShape.width], \
-                            [DIGIT_THRESHOLD, DIGIT_THRESHOLD])
 
             segColumn = self.rowScan(rowNum, lcdShape)
 
@@ -898,14 +944,14 @@ class Meter():
             last = 0
             for col in segColumn:
                 if (j & 1) == 0:
-                    fill = WHITE_FILL
+                    # fill = WHITE_FILL
                     color = 'w'
                 else:
-                    fill = BLACK_FILL
+                    # fill = BLACK_FILL
                     color = 'b'
-                if self.draw:
-                    draw1.line(((x0 - col, markStart + y0), \
-                                (x0 - col, markEnd + y0)), fill=fill)
+                # if self.draw:
+                #     draw1.line(((x0 - col, markStart + y0), \
+                #                 (x0 - col, markEnd + y0)), fill=fill)
                 if flag == 0:
                     flag = DIGIT_COLUMNS
                     if dig <= MAX_DIGITS:
@@ -925,14 +971,14 @@ class Meter():
                         if self.dbg0:
                             m = "%d st %3d en %3d w %2d g %2d" % \
                                 (dig, st, en, w, gap)
-                        if (markStart == 0) and self.draw:
-                            draw1.line(((x0 - st, markStart + y0), \
-                                        (x0 - st, markEnd + y0)), \
-                                       fill=GRAY_FILL)
-                            if dig == MAX_DIGITS:
-                                draw1.line(((x0 - en, markStart + y0), \
-                                            (x0 - en, markEnd+ y0)), \
-                                           fill=GRAY_FILL)
+                        # if (markStart == 0) and self.draw:
+                        #     draw1.line(((x0 - st, markStart + y0), \
+                        #                 (x0 - st, markEnd + y0)), \
+                        #                fill=GRAY_FILL)
+                        #     if dig == MAX_DIGITS:
+                        #         draw1.line(((x0 - en, markStart + y0), \
+                        #                     (x0 - en, markEnd+ y0)), \
+                        #                    fill=GRAY_FILL)
                         dig += 1
                 else:
                     flag -= 1
@@ -953,72 +999,35 @@ class Meter():
                           (i, data.strCol[index], data.endCol[index]))
                 print()
 
-            if False and self.plot4:
-                w = lcdShape.width
-                xVal = []
-                yVal = []
-                lo = DIGIT_THRESHOLD + 5
-                hi = 255
-                xVal.append(w)
-                yVal.append(lo)
-                for data in digitData:
-                    xVal.append(w - data.strCol[index])
-                    yVal.append(lo)
-                    xVal.append(w - data.strCol[index])
-                    yVal.append(hi)
-                    xVal.append(w - data.endCol[index])
-                    yVal.append(hi)
-                    xVal.append(w - data.endCol[index])
-                    yVal.append(lo)
-                axs[n].plot(xVal, yVal)
-                n += 1
             seg.append(segColumn)
             index += 1
 
-        if False and self.plot4:
-            if self.save:
-                fig.savefig("plot4.png")
-            else:
-                plt.show()
+        # if self.draw:
+        #     refDraw.save("refDraw1.png", "PNG")
 
-        if self.draw:
-            refDraw.save("refDraw1.png", "PNG")
-
-            refDraw = self.refGray.copy()
-            draw1 = ImageDraw.Draw(refDraw)
-
-        if False and self.plot5:
-            fig, axs = plt.subplots(3, 2, sharex=True)
-            axs = list(np.concatenate(axs).flat)
-            fig.set_figheight(2 * fig.get_figheight())
-            fig.set_figwidth(2 * fig.get_figwidth())
-            j = 0
+        #     refDraw = self.refGray.copy()
+        #     draw1 = ImageDraw.Draw(refDraw)
 
         for n, data in enumerate(digitData):
             stCol = data.strCol[0]
             enCol = data.endCol[0]
             centerCol = data.col[0]
 
-            if self.draw:
-                h = lcdShape.height
-                draw1.line(((x0 - centerCol, 0 + y0), \
-                            (x0 - centerCol, h + y0)), \
-                           fill=BLACK_FILL)
-                draw1.line(((x0 - stCol, 0 + y0), \
-                            (x0 - stCol, h + y0)), fill=WHITE_FILL)
-                draw1.line(((x0 - enCol, 0 + y0), \
-                            (x0 - enCol, h + y0)), fill=WHITE_FILL)
+            # if self.draw:
+            #     h = lcdShape.height
+            #     draw1.line(((x0 - centerCol, 0 + y0), \
+            #                 (x0 - centerCol, h + y0)), \
+            #                fill=BLACK_FILL)
+            #     draw1.line(((x0 - stCol, 0 + y0), \
+            #                 (x0 - stCol, h + y0)), fill=WHITE_FILL)
+            #     draw1.line(((x0 - enCol, 0 + y0), \
+            #                 (x0 - enCol, h + y0)), fill=WHITE_FILL)
 
             if self.dbg0:
                 w0 = lcdShape.width
                 print("%d st %3d %3d en %3d %3d c %3d %3d" % \
                       (n, stCol, w0-stCol, enCol, w0-enCol, \
                        centerCol, w0-centerCol), end="")
-
-            if False and self.plot5:
-                tmpCol = self.refArray[:,x0 - centerCol]
-                axs[j].plot(tmpCol[lcdShape.top:lcdShape.bottom])
-                axs[j].set_title("%d Column %d" % (n, centerCol))
 
             segRows = []
             lastPixel = MAX_PIXEL
@@ -1046,14 +1055,10 @@ class Meter():
                             if self.dbg0:
                                 print(" %3d" % (segRow), end="")
 
-                            if self.draw:
-                                draw1.line(((lcdShape.left, y0 + segRow), \
-                                            (lcdShape.right, y0 + segRow)), \
-                                           fill=GRAY_FILL)
-
-                            if False and self.plot5:
-                                axs[j].plot([segRow, segRow], \
-                                            [0, DIGIT_THRESHOLD])
+                            # if self.draw:
+                            #     draw1.line(((lcdShape.left, y0 + segRow), \
+                            #                 (lcdShape.right, y0 + segRow)), \
+                            #                fill=GRAY_FILL)
 
                             if len(segRows) >= 3:
                                 break
@@ -1084,17 +1089,11 @@ class Meter():
             if self.dbg0:
                 print()
 
-            if False and self.plot5:
-                j += 1
-
-        if False and self.plot5:
-            if self.save:
-                fig.savefig("plot5.png")
-            else:
-                plt.show()
+        # if self.draw:
+        #     refDraw.save("refDraw2.png", "PNG")
 
         if self.draw:
-            refDraw.save("refDraw2.png", "PNG")
+            self.refDraw(self.refGray, lcdShape, seg, digitData)
 
         if self.plot4:
             self.drawPlot4(self.refArray, lcdShape, seg, digitData)
@@ -1287,113 +1286,115 @@ class Meter():
             # targetDraw.save("targetDraw0.png", "PNG")
         return targetArray
 
+    def targetDraw(self, image, lcdShape, digitData):
+        targetDraw = image.copy()
+        draw1 = ImageDraw.Draw(targetDraw)
+        l = lcdShape.left
+        r = lcdShape.right
+        t = lcdShape.top
+        b = lcdShape.bottom
+
+        d = draw1.line
+        d(((l, t), (r, t)), fill=WHITE_FILL)
+        d(((r, t), (r, b)), fill=WHITE_FILL)
+        d(((r, b), (l, b)), fill=WHITE_FILL)
+        d(((l, b), (l, t)), fill=WHITE_FILL)
+
+        y0 = lcdShape.top
+        for data in digitData:
+            colT = lcdShape.right - data.col[0]
+            colB = lcdShape.right - data.col[1]
+            colRangeT = data.colRange[0]
+            topRow = data.topRow + y0
+            botRow = data.botRow + y0
+            rowRange = data.rowRange
+            dirT = data.dirStart + y0
+            dirB = data.dirEnd + y0
+            d(((colT, topRow), (colT+colRangeT, topRow)), fill=BLACK_FILL)
+            d(((colT, topRow), (colT-colRangeT, topRow)), fill=WHITE_FILL)
+            d(((colB, botRow), (colB+colRangeT, botRow)), fill=WHITE_FILL)
+            d(((colB, botRow), (colB-colRangeT, botRow)), fill=BLACK_FILL)
+
+            d(((colT, topRow), (colT, topRow-rowRange)), fill=BLACK_FILL)
+            d(((colT, topRow), (colT, topRow+rowRange)), fill=WHITE_FILL)
+            d(((colT, botRow), (colT, botRow+rowRange)), fill=BLACK_FILL)
+
+            d(((colT, dirT), (colT, dirB)), fill=WHITE_FILL)
+
+        targetDraw.save("targetDraw2.png", "PNG")
+
+    def drawPlot6(self, array, lcdShape, digitData):
+        fig, axs = plt.subplots(3, 2, sharex=True)
+        axs = list(np.concatenate(axs).flat)
+        fig.set_figheight(2 * fig.get_figheight())
+        fig.set_figwidth(2 * fig.get_figwidth())
+        
+        x0 = lcdShape.right
+        y0 = lcdShape.top
+        for i, data in enumerate(digitData):
+            axs[i].plot(array[data.dirStart + y0:data.dirEnd + y0, \
+                                    x0 - data.col[0]])
+            axs[i].plot([0, data.dirEnd - data.dirStart], \
+                        [DIGIT_THRESHOLD, DIGIT_THRESHOLD])
+            axs[i].set_title("Direction %d col %d" % (i, data.col[0]))
+
+        if self.save:
+            fig.savefig("plot6.png")
+        else:
+            plt.show()
+
+    def drawPlot7(self, array, lcdShape, digitData):
+        fig, axs = plt.subplots(3, 2, sharex=True)
+        axs = list(np.concatenate(axs).flat)
+        fig.set_figheight(2 * fig.get_figheight())
+        fig.set_figwidth(2 * fig.get_figwidth())
+
+        x0 = lcdShape.right
+        for i, data in enumerate(digitData):
+                x0 = lcdShape.right
+                tmpCol = array[:, x0 - data.col[0]]
+                axs[i].plot(tmpCol[lcdShape.top:lcdShape.bottom])
+                axs[i].plot([0, lcdShape.height], \
+                             [DIGIT_THRESHOLD, DIGIT_THRESHOLD])
+                axs[i].set_title("%d Column %d" % (i, data.col[0]))
+
+        if self.save:
+            fig.savefig("plot7.png")
+        else:
+            plt.show()
+
     def readDisplay(self, targetArray, lcdShape, digitData):
-        if self.plot6:
-            fig, axs = plt.subplots(3, 2, sharex=True)
-            axs = list(np.concatenate(axs).flat)
-            fig.set_figheight(2 * fig.get_figheight())
-            fig.set_figwidth(2 * fig.get_figwidth())
-            n = 0
-
-        if self.plot7:
-            fig7, axs7 = plt.subplots(3, 2, sharex=True)
-            axs7 = list(np.concatenate(axs7).flat)
-            fig7.set_figheight(2 * fig7.get_figheight())
-            fig7.set_figwidth(2 * fig7.get_figwidth())
-            j = 0
-
         if self.draw:
-            targetDraw = self.targetGray.copy()
-            draw1 = ImageDraw.Draw(targetDraw)
-            l = lcdShape.left
-            r = lcdShape.right
-            t = lcdShape.top
-            b = lcdShape.bottom
-            draw1.line(((l, t), (r, t)), fill=WHITE_FILL)
-            draw1.line(((r, t), (r, b)), fill=WHITE_FILL)
-            draw1.line(((r, b), (l, b)), fill=WHITE_FILL)
-            draw1.line(((l, b), (l, t)), fill=WHITE_FILL)
+            self.targetDraw(self.targetGray, lcdShape, digitData)
+
+        if self.plot6:
+            self.drawPlot6(targetArray, lcdShape, digitData)
+            
+        if self.plot7:
+            self.drawPlot7(targetArray, lcdShape, digitData)
 
         meterVal = 0
         meterMult = 1
         dirMask = 1
         dirVal = 0
         for i, data in enumerate(digitData):
-            if self.plot7:
-                x0 = lcdShape.right
-                tmpCol = targetArray[:, x0 - data.col[0]]
-                axs7[j].plot(tmpCol[lcdShape.top:lcdShape.bottom])
-                axs7[j].plot([0, data.maxRow], \
-                             [DIGIT_THRESHOLD, DIGIT_THRESHOLD])
-                axs7[j].set_title("%d Column %d" % (j, data.col[0]))
-                j += 1
-
             result = self.readSegments(targetArray, lcdShape, data, i)
             if self.dbg0:
                 print("result %02x %d" % (result, self.decode(result)))
             meterVal += meterMult * self.decode(result)
             meterMult *= 10
 
-            if self.plot6:
-                x0 = lcdShape.right
-                y0 = lcdShape.top
-                axs[n].plot(targetArray[data.dirStart + y0:data.dirEnd + y0, \
-                                        x0 - data.col[0]])
-                axs[n].plot([0, data.dirEnd - data.dirStart], \
-                            [DIGIT_THRESHOLD, DIGIT_THRESHOLD])
-                axs[n].set_title("Direction %d col %d" % (i, data.col[0]))
-                n += 1
-
             result = self.readDirection(targetArray, lcdShape, data)
             if result:
                 dirVal |= dirMask
             dirMask <<= 1
-
-            if self.draw:
-                self.readDraw(draw1.line, lcdShape, data)
 
         if dirVal <= 0x30:
             dirVal = (dirVal, dirConv[dirVal])
         else:
             dirVal = (dirVal, 99)
 
-        if self.plot6:
-            if self.save:
-                fig.savefig("plot6.png")
-            else:
-                plt.show()
-
-        if self.plot7:
-            if self.save:
-                fig7.savefig("plot7.png")
-            else:
-                plt.show()
-
-        if self.draw:
-            targetDraw.save("targetDraw2.png", "PNG")
-
         return (meterVal, dirVal)
-
-    def readDraw(self, d, lcdShape, data):
-        y0 = lcdShape.top
-        colT = lcdShape.right - data.col[0]
-        colB = lcdShape.right - data.col[1]
-        colRangeT = data.colRange[0]
-        topRow = data.topRow + y0
-        botRow = data.botRow + y0
-        rowRange = data.rowRange
-        dirT = data.dirStart + y0
-        dirB = data.dirEnd + y0
-        d(((colT, topRow), (colT+colRangeT, topRow)), fill=BLACK_FILL)
-        d(((colT, topRow), (colT-colRangeT, topRow)), fill=WHITE_FILL)
-        d(((colB, botRow), (colB+colRangeT, botRow)), fill=WHITE_FILL)
-        d(((colB, botRow), (colB-colRangeT, botRow)), fill=BLACK_FILL)
-
-        d(((colT, topRow), (colT, topRow-rowRange)), fill=BLACK_FILL)
-        d(((colT, topRow), (colT, topRow+rowRange)), fill=WHITE_FILL)
-        d(((colT, botRow), (colT, botRow+rowRange)), fill=BLACK_FILL)
-
-        d(((colT, dirT), (colT, dirB)), fill=WHITE_FILL)
 
     def updateReading(self, val):
         if val != self.lastVal:
@@ -1585,12 +1586,49 @@ class Meter():
         digitData = self.findRefSegments(lcdShape)
 
         if LINUX:
-            cm.findRefSegments(self.refArray.ravel(), len(self.refArray[0]))
-            for n, data in enumerate(digitData):
-                for j in (0, 1):
-                    cm.setDigitCol(data.strCol[0], data.endCol[0], n, j)
-                cm.setSegRows(np.array(data.segRows, np.int32), n)
-                cm.setDirRows(data.dirStart, data.dirEnd, n)
+            if True:
+                lcdShape.print()
+                
+                cm.cvar.updateEna = 1
+                refArray = self.refArray
+                cm.targetBounds(refArray.ravel(), len(refArray[0]))
+                shape = LcdShape(refArray)
+                shape.get()
+                shape.print()
+
+                cm.findRefSegments(refArray.ravel(), len(refArray[0]))
+
+                tmpData = []
+                for index in range(MAX_DIGITS+1):
+                    data = DigitData(0, 0)
+                    tmpData.append(data)
+                    cm.prtDigDat(index)
+                    cm.prtDigDatC(index)
+                    data.get(index)
+                    print("%d " % (index), end="")
+                    data.print()
+                    data.printC()
+
+                seg = []
+                for index in range(2):
+                    segColumns = np.empty(24, np.int32)
+                    cm.getSegColumn(segColumns, index)
+                    print(segColumns)
+                    seg.append(list(segColumns))
+                
+                if self.plot4:
+                    self.drawPlot4(refArray, shape, seg, tmpData)
+
+                if self.plot5:
+                    self.drawPlot5(refArray, shape, tmpData)
+
+            if False:
+                cm.findRefSegments(self.refArray.ravel(), len(self.refArray[0]))
+                for n, data in enumerate(digitData):
+                    for j in (0, 1):
+                        cm.setDigitCol(data.strCol[0], data.endCol[0], n, j)
+                    cm.setSegRows(np.array(data.segRows, np.int32), n)
+                    cm.setDirRows(data.dirStart, data.dirEnd, n)
             cm.loopInit();
 
         if self.loop:
