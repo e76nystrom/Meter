@@ -103,9 +103,6 @@ dirConv = \
   4,				# 0x30
 )
 
-# LcdRows = namedtuple('LcdRows', ['top', 'bottom'])
-# LcdCols = namedtuple('LcdCols', ['left', 'right'])
-
 tz = timezone("America/New_York")
 
 def timeStr():
@@ -584,21 +581,6 @@ class Meter():
             print("t %3d b %3d l %3d r %3d rr %3d cr %3d" % \
                   (tr, br, lc, rc, rr, cr))
 
-        # if self.draw:
-        #     targetDraw = self.targetGray.copy()
-        #     draw1 = ImageDraw.Draw(targetDraw)
-        #     d = draw1.line
-        #     d(((lc - cr, tr - rr), (rc + cr, tr - rr)), fill=BLACK_FILL)
-        #     d(((rc + cr, tr - rr), (rc + cr, br + rr)), fill=BLACK_FILL)
-        #     d(((rc + cr, br + rr), (lc - cr, br + rr)), fill=BLACK_FILL)
-        #     d(((lc - cr, br + rr), (lc - cr, tr - rr)), fill=BLACK_FILL)
-
-        # if self.plot8:
-        #     fig, axs = plt.subplots(2)
-        #     fig.set_figheight(2 * fig.get_figheight())
-        #     fig.suptitle("target bounds")
-        #     n = 0
-
         rows = []
         for r in (tr, br):
             if self.dbg2:
@@ -617,17 +599,6 @@ class Meter():
             rows.append(r0)
             if self.dbg2:
                 print()
-
-            # if self.plot8:
-            #     axs[n].plot(array[r0])
-            #     axs[n].set_title("row %3d" % (r0))
-            #     n += 1
-
-        # if self.plot8:
-        #     if self.save:
-        #         fig.savefig("plot8.png")
-        #     else:
-        #         plt.show()
 
         cols = []
         (r0, r1) = rows
@@ -652,16 +623,6 @@ class Meter():
 
         if self.dbg0:
             print("t %3d b %3d l %3d r %3d" % (r0, r1, cols[0], cols[1]))
-
-        # if self.draw:
-        #     if (len(cols) == 2) and (len(rows) == 2):
-        #         (t, b) = rows
-        #         (l, r) = cols
-        #         d(((l, t), (r, t)), fill=WHITE_FILL)
-        #         d(((r, t), (r, b)), fill=WHITE_FILL)
-        #         d(((r, b), (l, b)), fill=WHITE_FILL)
-        #         d(((l, b), (l, t)), fill=WHITE_FILL)
-        #     targetDraw.save("targetDraw1.png", "PNG")
 
         if self.plot8:
             self.drawPlot8(array, lcdShape, rows)
@@ -690,100 +651,6 @@ class Meter():
                    lcdShape.width * lcdShape.height, \
                    lcdShape.topRow, lcdShape.botRow))
         return(lcdShape)
-
-    # def rowScan0(self, rowNum, lcdShape):
-    #     maxPixel = 0
-    #     minPixel = MAX_PIXEL
-    #     findMin = True
-    #     segColumn = []
-    #     # for col in range(lcdShape.width - 3, 0, -1):
-    #     #     pixel = row[col + x0]
-    #     for col in range(3, lcdShape.width):
-    #         pixel = row[x0 - col]
-    #         if findMin:
-    #             if pixel < minPixel:
-    #                 minPixel = pixel
-    #                 minLoc = col
-    #             else:
-    #                 delta = pixel - minPixel
-    #                 if delta > SEG_COL_THRESHOLD:
-    #                     segColumn.append(col)
-    #                     maxPixel = 0
-    #                     findMin = False
-    #         else:
-    #             if pixel > maxPixel:
-    #                 maxPixel = pixel
-    #                 maxLoc = col
-    #             else:
-    #                 delta = maxPixel - pixel
-    #                 if delta > SEG_COL_THRESHOLD:
-    #                     segColumn.append(col)
-    #                     minPixel = MAX_PIXEL
-    #                     findMin = True
-    #     return segColumn
-
-    # def rowScan1(self, rowNum, lcdShape):
-    #     if self.dbg0:
-    #         print("rowScan %3d" % (rowNum))
-    #         change = ""
-    #         w = lcdShape.width
-    #     x0 = lcdShape.right
-    #     negDelta = True
-    #     deltaTotal = 0
-    #     hyst = 0
-    #     segColumn = []
-    #     row = self.refArray[rowNum]
-    #     lastPixel = int(row[x0 - 2])
-    #     for col in range(3, lcdShape.width):
-    #         pixel = int(row[x0 - col])
-    #         delta = pixel - lastPixel
-    #         if negDelta:
-    #             if delta < 0:
-    #                 deltaTotal -= delta
-    #                 hyst = 0
-    #             else:
-    #                 if deltaTotal > REF_DELTA_THRESHOLD:
-    #                     negCol = col
-    #                     segColumn.append(negCol)
-    #                     negDelta = False
-    #                     deltaTotal = 0
-    #                     hyst = 0
-    #                     if self.dbg3:
-    #                         change = "neg %3d\n" % (negCol)
-    #                 else:
-    #                     if hyst >= 1:
-    #                         stCol = col
-    #                         deltaTotal = 0
-    #                     else:
-    #                         deltaTotal -= delta
-    #                         hyst += 1
-    #         else:
-    #             if delta > 0:
-    #                 deltaTotal += delta
-    #                 hyst = 0
-    #             else:
-    #                 if deltaTotal > REF_DELTA_THRESHOLD:
-    #                     posCol = col
-    #                     segColumn.append(posCol)
-    #                     negDelta = True
-    #                     deltaTotal = 0
-    #                     hyst = 0
-    #                     if self.dbg0:
-    #                         change = "pos %3d\n" % (posCol)
-    #                 else:
-    #                     if hyst >= 2:
-    #                         stCol = col
-    #                         deltaTotal = 0
-    #                     else:
-    #                         deltaTotal += delta
-    #                         hyst += 1
-    #         if self.dbg3:
-    #             print("%ccol %3d %3d pixel %3d delta %3d dTotal %3d h %d %s" % \
-    #                   ((">", "<")[negDelta], col, w - col, pixel, \
-    #                    delta, deltaTotal, hyst, change))
-    #             change = ""
-    #         lastPixel = pixel
-    #     return segColumn
 
     def drawPlot4(self, array, lcdShape, seg, digitData):
         x0 = lcdShape.right
@@ -965,26 +832,12 @@ class Meter():
         t = lcdShape.topRow + y0
         b = lcdShape.botRow + y0
 
-        # if self.draw:
-        #     refDraw = self.refGray.copy()
-        #     draw1 = ImageDraw.Draw(refDraw)
-        #     draw1.line(((l, t), (r, t)), fill=BLACK_FILL)
-        #     draw1.line(((l, b), (r, b)), fill=BLACK_FILL)
-        #     refDraw.save("refDraw0.png", "PNG")
-
-        #     refDraw = self.refGray.copy()
-        #     draw1 = ImageDraw.Draw(refDraw)
-
-        # mark = int(lcdShape.height * MARK_HEIGHT)
         index = 0
         digitData = []
         seg = []
-        # for (rowNum, markStart, markEnd) in \
-        #     ((t, 0, mark), (b, mark, lcdShape.height)):
         for rowNum in (t, b):
             if self.dbg0:
                 print("findRefSegments row %2d" % (rowNum))
-            # row = self.refArray[rowNum]
 
             segColumn = self.rowScan(rowNum, lcdShape)
 
@@ -994,14 +847,9 @@ class Meter():
             last = 0
             for col in segColumn:
                 if (j & 1) == 0:
-                    # fill = WHITE_FILL
                     color = 'w'
                 else:
-                    # fill = BLACK_FILL
                     color = 'b'
-                # if self.draw:
-                #     draw1.line(((x0 - col, markStart + y0), \
-                #                 (x0 - col, markEnd + y0)), fill=fill)
                 if flag == 0:
                     flag = DIGIT_COLUMNS
                     if dig <= MAX_DIGITS:
@@ -1021,14 +869,6 @@ class Meter():
                         if self.dbg0:
                             m = "%d st %3d en %3d w %2d g %2d" % \
                                 (dig, st, en, w, gap)
-                        # if (markStart == 0) and self.draw:
-                        #     draw1.line(((x0 - st, markStart + y0), \
-                        #                 (x0 - st, markEnd + y0)), \
-                        #                fill=GRAY_FILL)
-                        #     if dig == MAX_DIGITS:
-                        #         draw1.line(((x0 - en, markStart + y0), \
-                        #                     (x0 - en, markEnd+ y0)), \
-                        #                    fill=GRAY_FILL)
                         dig += 1
                 else:
                     flag -= 1
@@ -1052,26 +892,10 @@ class Meter():
             seg.append(segColumn)
             index += 1
 
-        # if self.draw:
-        #     refDraw.save("refDraw1.png", "PNG")
-
-        #     refDraw = self.refGray.copy()
-        #     draw1 = ImageDraw.Draw(refDraw)
-
         for n, data in enumerate(digitData):
             stCol = data.strCol[0]
             enCol = data.endCol[0]
             centerCol = data.col[0]
-
-            # if self.draw:
-            #     h = lcdShape.height
-            #     draw1.line(((x0 - centerCol, 0 + y0), \
-            #                 (x0 - centerCol, h + y0)), \
-            #                fill=BLACK_FILL)
-            #     draw1.line(((x0 - stCol, 0 + y0), \
-            #                 (x0 - stCol, h + y0)), fill=WHITE_FILL)
-            #     draw1.line(((x0 - enCol, 0 + y0), \
-            #                 (x0 - enCol, h + y0)), fill=WHITE_FILL)
 
             if self.dbg0:
                 w0 = lcdShape.width
@@ -1105,11 +929,6 @@ class Meter():
                             if self.dbg0:
                                 print(" %3d" % (segRow), end="")
 
-                            # if self.draw:
-                            #     draw1.line(((lcdShape.left, y0 + segRow), \
-                            #                 (lcdShape.right, y0 + segRow)), \
-                            #                fill=GRAY_FILL)
-
                             if len(segRows) >= 3:
                                 break
                 lastPixel = pixel
@@ -1138,9 +957,6 @@ class Meter():
 
             if self.dbg0:
                 print()
-
-        # if self.draw:
-        #     refDraw.save("refDraw2.png", "PNG")
 
         if self.draw:
             self.refDraw(self.refGray, lcdShape, seg, digitData)
