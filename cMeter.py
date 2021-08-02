@@ -65,9 +65,6 @@ class _SwigNonDynamicMeta(type):
 def piInit():
     return _cMeter.piInit()
 
-def setThresholds(col, digit):
-    return _cMeter.setThresholds(col, digit)
-
 def setRef(array, w, h):
     return _cMeter.setRef(array, w, h)
 
@@ -80,11 +77,11 @@ def setSize(width, height):
 def setRows(top, bottom):
     return _cMeter.setRows(top, bottom)
 
-def getRows():
-    return _cMeter.getRows()
-
 def setColumns(left, right):
     return _cMeter.setColumns(left, right)
+
+def getRows():
+    return _cMeter.getRows()
 
 def getColumns():
     return _cMeter.getColumns()
@@ -92,17 +89,35 @@ def getColumns():
 def printShape():
     return _cMeter.printShape()
 
+def getSegColumn(segCol, index):
+    return _cMeter.getSegColumn(segCol, index)
+
 def setDigitCol(strCol, endCol, index, n):
     return _cMeter.setDigitCol(strCol, endCol, index, n)
 
 def setSegRows(segRows, index):
     return _cMeter.setSegRows(segRows, index)
 
-def setDirRows(dirStart, dirRange, index):
-    return _cMeter.setDirRows(dirStart, dirRange, index)
+def setDirRows(dirStart, dirEnd, index):
+    return _cMeter.setDirRows(dirStart, dirEnd, index)
 
-def targetBounds(array, w, h):
-    return _cMeter.targetBounds(array, w, h)
+def getDigitCol(index, n):
+    return _cMeter.getDigitCol(index, n)
+
+def getSegRows(segRows, index):
+    return _cMeter.getSegRows(segRows, index)
+
+def getDirRows(index):
+    return _cMeter.getDirRows(index)
+
+def prtDigDat(index):
+    return _cMeter.prtDigDat(index)
+
+def prtDigDatC(index):
+    return _cMeter.prtDigDatC(index)
+
+def targetBounds(array, w):
+    return _cMeter.targetBounds(array, w)
 
 def findRefSegments(array, w):
     return _cMeter.findRefSegments(array, w)

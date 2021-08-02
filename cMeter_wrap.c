@@ -2837,6 +2837,9 @@ SWIGINTERNINLINE PyObject*
 }
 
 
+  #define SWIG_From_double   PyFloat_FromDouble 
+
+
 #if NPY_API_VERSION < 0x00000007
 #define NPY_ARRAY_DEFAULT NPY_DEFAULT
 #define NPY_ARRAY_FARRAY  NPY_FARRAY
@@ -3309,9 +3312,6 @@ SWIGINTERNINLINE PyObject*
 
 
 
-
-  #define SWIG_From_double   PyFloat_FromDouble 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -3384,40 +3384,103 @@ SWIGINTERN PyObject *Swig_var_updateEna_get(void) {
 }
 
 
+SWIGINTERN int Swig_var_TARGET_COLUMN_RANGE_set(PyObject *_val) {
+  {
+    double val;
+    int res = SWIG_AsVal_double(_val, &val);
+    if (!SWIG_IsOK(res)) {
+      SWIG_exception_fail(SWIG_ArgError(res), "in variable '""TARGET_COLUMN_RANGE""' of type '""double""'");
+    }
+    TARGET_COLUMN_RANGE = (double)(val);
+  }
+  return 0;
+fail:
+  return 1;
+}
+
+
+SWIGINTERN PyObject *Swig_var_TARGET_COLUMN_RANGE_get(void) {
+  PyObject *pyobj = 0;
+  
+  pyobj = SWIG_From_double((double)(TARGET_COLUMN_RANGE));
+  return pyobj;
+}
+
+
+SWIGINTERN int Swig_var_TARGET_ROW_RANGE_set(PyObject *_val) {
+  {
+    double val;
+    int res = SWIG_AsVal_double(_val, &val);
+    if (!SWIG_IsOK(res)) {
+      SWIG_exception_fail(SWIG_ArgError(res), "in variable '""TARGET_ROW_RANGE""' of type '""double""'");
+    }
+    TARGET_ROW_RANGE = (double)(val);
+  }
+  return 0;
+fail:
+  return 1;
+}
+
+
+SWIGINTERN PyObject *Swig_var_TARGET_ROW_RANGE_get(void) {
+  PyObject *pyobj = 0;
+  
+  pyobj = SWIG_From_double((double)(TARGET_ROW_RANGE));
+  return pyobj;
+}
+
+
+SWIGINTERN int Swig_var_SUM_THRESHOLD_set(PyObject *_val) {
+  {
+    int val;
+    int res = SWIG_AsVal_int(_val, &val);
+    if (!SWIG_IsOK(res)) {
+      SWIG_exception_fail(SWIG_ArgError(res), "in variable '""SUM_THRESHOLD""' of type '""int""'");
+    }
+    SUM_THRESHOLD = (int)(val);
+  }
+  return 0;
+fail:
+  return 1;
+}
+
+
+SWIGINTERN PyObject *Swig_var_SUM_THRESHOLD_get(void) {
+  PyObject *pyobj = 0;
+  
+  pyobj = SWIG_From_int((int)(SUM_THRESHOLD));
+  return pyobj;
+}
+
+
+SWIGINTERN int Swig_var_DIGIT_THRESHOLD_set(PyObject *_val) {
+  {
+    int val;
+    int res = SWIG_AsVal_int(_val, &val);
+    if (!SWIG_IsOK(res)) {
+      SWIG_exception_fail(SWIG_ArgError(res), "in variable '""DIGIT_THRESHOLD""' of type '""int""'");
+    }
+    DIGIT_THRESHOLD = (int)(val);
+  }
+  return 0;
+fail:
+  return 1;
+}
+
+
+SWIGINTERN PyObject *Swig_var_DIGIT_THRESHOLD_get(void) {
+  PyObject *pyobj = 0;
+  
+  pyobj = SWIG_From_int((int)(DIGIT_THRESHOLD));
+  return pyobj;
+}
+
+
 SWIGINTERN PyObject *_wrap_piInit(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   
   if (!SWIG_Python_UnpackTuple(args, "piInit", 0, 0, 0)) SWIG_fail;
   piInit();
-  resultobj = SWIG_Py_Void();
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_setThresholds(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  int arg1 ;
-  int arg2 ;
-  int val1 ;
-  int ecode1 = 0 ;
-  int val2 ;
-  int ecode2 = 0 ;
-  PyObject *swig_obj[2] ;
-  
-  if (!SWIG_Python_UnpackTuple(args, "setThresholds", 2, 2, swig_obj)) SWIG_fail;
-  ecode1 = SWIG_AsVal_int(swig_obj[0], &val1);
-  if (!SWIG_IsOK(ecode1)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode1), "in method '" "setThresholds" "', argument " "1"" of type '" "int""'");
-  } 
-  arg1 = (int)(val1);
-  ecode2 = SWIG_AsVal_int(swig_obj[1], &val2);
-  if (!SWIG_IsOK(ecode2)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "setThresholds" "', argument " "2"" of type '" "int""'");
-  } 
-  arg2 = (int)(val2);
-  setThresholds(arg1,arg2);
   resultobj = SWIG_Py_Void();
   return resultobj;
 fail:
@@ -3597,6 +3660,35 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_setColumns(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  int arg1 ;
+  int arg2 ;
+  int val1 ;
+  int ecode1 = 0 ;
+  int val2 ;
+  int ecode2 = 0 ;
+  PyObject *swig_obj[2] ;
+  
+  if (!SWIG_Python_UnpackTuple(args, "setColumns", 2, 2, swig_obj)) SWIG_fail;
+  ecode1 = SWIG_AsVal_int(swig_obj[0], &val1);
+  if (!SWIG_IsOK(ecode1)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode1), "in method '" "setColumns" "', argument " "1"" of type '" "int""'");
+  } 
+  arg1 = (int)(val1);
+  ecode2 = SWIG_AsVal_int(swig_obj[1], &val2);
+  if (!SWIG_IsOK(ecode2)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "setColumns" "', argument " "2"" of type '" "int""'");
+  } 
+  arg2 = (int)(val2);
+  setColumns(arg1,arg2);
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_getRows(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   int *arg1 = (int *) 0 ;
@@ -3623,35 +3715,6 @@ SWIGINTERN PyObject *_wrap_getRows(PyObject *SWIGUNUSEDPARM(self), PyObject *arg
     int new_flags = SWIG_IsNewObj(res2) ? (SWIG_POINTER_OWN |  0 ) :  0 ;
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_NewPointerObj((void*)(arg2), SWIGTYPE_p_int, new_flags));
   }
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_setColumns(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  int arg1 ;
-  int arg2 ;
-  int val1 ;
-  int ecode1 = 0 ;
-  int val2 ;
-  int ecode2 = 0 ;
-  PyObject *swig_obj[2] ;
-  
-  if (!SWIG_Python_UnpackTuple(args, "setColumns", 2, 2, swig_obj)) SWIG_fail;
-  ecode1 = SWIG_AsVal_int(swig_obj[0], &val1);
-  if (!SWIG_IsOK(ecode1)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode1), "in method '" "setColumns" "', argument " "1"" of type '" "int""'");
-  } 
-  arg1 = (int)(val1);
-  ecode2 = SWIG_AsVal_int(swig_obj[1], &val2);
-  if (!SWIG_IsOK(ecode2)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "setColumns" "', argument " "2"" of type '" "int""'");
-  } 
-  arg2 = (int)(val2);
-  setColumns(arg1,arg2);
-  resultobj = SWIG_Py_Void();
   return resultobj;
 fail:
   return NULL;
@@ -3702,20 +3765,56 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_getSegColumn(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  int *arg1 = (int *) 0 ;
+  int arg2 ;
+  int arg3 ;
+  PyArrayObject *array1 = NULL ;
+  int i1 = 1 ;
+  int val3 ;
+  int ecode3 = 0 ;
+  PyObject *swig_obj[2] ;
+  
+  if (!SWIG_Python_UnpackTuple(args, "getSegColumn", 2, 2, swig_obj)) SWIG_fail;
+  {
+    array1 = obj_to_array_no_conversion(swig_obj[0], NPY_INT);
+    if (!array1 || !require_dimensions(array1,1) || !require_contiguous(array1)
+      || !require_native(array1)) SWIG_fail;
+    arg1 = (int*) array_data(array1);
+    arg2 = 1;
+    for (i1=0; i1 < array_numdims(array1); ++i1) arg2 *= array_size(array1,i1);
+  }
+  ecode3 = SWIG_AsVal_int(swig_obj[1], &val3);
+  if (!SWIG_IsOK(ecode3)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "getSegColumn" "', argument " "3"" of type '" "int""'");
+  } 
+  arg3 = (int)(val3);
+  getSegColumn(arg1,arg2,arg3);
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_setDigitCol(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   int arg1 ;
   int arg2 ;
   int arg3 ;
+  int arg4 ;
   int val1 ;
   int ecode1 = 0 ;
   int val2 ;
   int ecode2 = 0 ;
   int val3 ;
   int ecode3 = 0 ;
-  PyObject *swig_obj[3] ;
+  int val4 ;
+  int ecode4 = 0 ;
+  PyObject *swig_obj[4] ;
   
-  if (!SWIG_Python_UnpackTuple(args, "setDigitCol", 3, 3, swig_obj)) SWIG_fail;
+  if (!SWIG_Python_UnpackTuple(args, "setDigitCol", 4, 4, swig_obj)) SWIG_fail;
   ecode1 = SWIG_AsVal_int(swig_obj[0], &val1);
   if (!SWIG_IsOK(ecode1)) {
     SWIG_exception_fail(SWIG_ArgError(ecode1), "in method '" "setDigitCol" "', argument " "1"" of type '" "int""'");
@@ -3731,7 +3830,12 @@ SWIGINTERN PyObject *_wrap_setDigitCol(PyObject *SWIGUNUSEDPARM(self), PyObject 
     SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "setDigitCol" "', argument " "3"" of type '" "int""'");
   } 
   arg3 = (int)(val3);
-  setDigitCol(arg1,arg2,arg3);
+  ecode4 = SWIG_AsVal_int(swig_obj[3], &val4);
+  if (!SWIG_IsOK(ecode4)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode4), "in method '" "setDigitCol" "', argument " "4"" of type '" "int""'");
+  } 
+  arg4 = (int)(val4);
+  setDigitCol(arg1,arg2,arg3,arg4);
   resultobj = SWIG_Py_Void();
   return resultobj;
 fail:
@@ -3825,21 +3929,202 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_getDigitCol(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  int *arg1 = (int *) 0 ;
+  int *arg2 = (int *) 0 ;
+  int arg3 ;
+  int arg4 ;
+  int temp1 ;
+  int res1 = SWIG_TMPOBJ ;
+  int temp2 ;
+  int res2 = SWIG_TMPOBJ ;
+  int val3 ;
+  int ecode3 = 0 ;
+  int val4 ;
+  int ecode4 = 0 ;
+  PyObject *swig_obj[2] ;
+  
+  arg1 = &temp1;
+  arg2 = &temp2;
+  if (!SWIG_Python_UnpackTuple(args, "getDigitCol", 2, 2, swig_obj)) SWIG_fail;
+  ecode3 = SWIG_AsVal_int(swig_obj[0], &val3);
+  if (!SWIG_IsOK(ecode3)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "getDigitCol" "', argument " "3"" of type '" "int""'");
+  } 
+  arg3 = (int)(val3);
+  ecode4 = SWIG_AsVal_int(swig_obj[1], &val4);
+  if (!SWIG_IsOK(ecode4)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode4), "in method '" "getDigitCol" "', argument " "4"" of type '" "int""'");
+  } 
+  arg4 = (int)(val4);
+  getDigitCol(arg1,arg2,arg3,arg4);
+  resultobj = SWIG_Py_Void();
+  if (SWIG_IsTmpObj(res1)) {
+    resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_From_int((*arg1)));
+  } else {
+    int new_flags = SWIG_IsNewObj(res1) ? (SWIG_POINTER_OWN |  0 ) :  0 ;
+    resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_NewPointerObj((void*)(arg1), SWIGTYPE_p_int, new_flags));
+  }
+  if (SWIG_IsTmpObj(res2)) {
+    resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_From_int((*arg2)));
+  } else {
+    int new_flags = SWIG_IsNewObj(res2) ? (SWIG_POINTER_OWN |  0 ) :  0 ;
+    resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_NewPointerObj((void*)(arg2), SWIGTYPE_p_int, new_flags));
+  }
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_getSegRows(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  int *arg1 = (int *) 0 ;
+  int arg2 ;
+  int arg3 ;
+  PyArrayObject *array1 = NULL ;
+  int is_new_object1 = 0 ;
+  int val3 ;
+  int ecode3 = 0 ;
+  PyObject *swig_obj[2] ;
+  
+  if (!SWIG_Python_UnpackTuple(args, "getSegRows", 2, 2, swig_obj)) SWIG_fail;
+  {
+    npy_intp size[1] = {
+      -1 
+    };
+    array1 = obj_to_array_contiguous_allow_conversion(swig_obj[0],
+      NPY_INT,
+      &is_new_object1);
+    if (!array1 || !require_dimensions(array1, 1) ||
+      !require_size(array1, size, 1)) SWIG_fail;
+    arg1 = (int*) array_data(array1);
+    arg2 = (int) array_size(array1,0);
+  }
+  ecode3 = SWIG_AsVal_int(swig_obj[1], &val3);
+  if (!SWIG_IsOK(ecode3)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "getSegRows" "', argument " "3"" of type '" "int""'");
+  } 
+  arg3 = (int)(val3);
+  getSegRows(arg1,arg2,arg3);
+  resultobj = SWIG_Py_Void();
+  {
+    if (is_new_object1 && array1)
+    {
+      Py_DECREF(array1); 
+    }
+  }
+  return resultobj;
+fail:
+  {
+    if (is_new_object1 && array1)
+    {
+      Py_DECREF(array1); 
+    }
+  }
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_getDirRows(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  int *arg1 = (int *) 0 ;
+  int *arg2 = (int *) 0 ;
+  int arg3 ;
+  int temp1 ;
+  int res1 = SWIG_TMPOBJ ;
+  int temp2 ;
+  int res2 = SWIG_TMPOBJ ;
+  int val3 ;
+  int ecode3 = 0 ;
+  PyObject *swig_obj[1] ;
+  
+  arg1 = &temp1;
+  arg2 = &temp2;
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  ecode3 = SWIG_AsVal_int(swig_obj[0], &val3);
+  if (!SWIG_IsOK(ecode3)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "getDirRows" "', argument " "3"" of type '" "int""'");
+  } 
+  arg3 = (int)(val3);
+  getDirRows(arg1,arg2,arg3);
+  resultobj = SWIG_Py_Void();
+  if (SWIG_IsTmpObj(res1)) {
+    resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_From_int((*arg1)));
+  } else {
+    int new_flags = SWIG_IsNewObj(res1) ? (SWIG_POINTER_OWN |  0 ) :  0 ;
+    resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_NewPointerObj((void*)(arg1), SWIGTYPE_p_int, new_flags));
+  }
+  if (SWIG_IsTmpObj(res2)) {
+    resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_From_int((*arg2)));
+  } else {
+    int new_flags = SWIG_IsNewObj(res2) ? (SWIG_POINTER_OWN |  0 ) :  0 ;
+    resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_NewPointerObj((void*)(arg2), SWIGTYPE_p_int, new_flags));
+  }
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_prtDigDat(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  int arg1 ;
+  int val1 ;
+  int ecode1 = 0 ;
+  PyObject *swig_obj[1] ;
+  
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  ecode1 = SWIG_AsVal_int(swig_obj[0], &val1);
+  if (!SWIG_IsOK(ecode1)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode1), "in method '" "prtDigDat" "', argument " "1"" of type '" "int""'");
+  } 
+  arg1 = (int)(val1);
+  prtDigDat(arg1);
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_prtDigDatC(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  int arg1 ;
+  int val1 ;
+  int ecode1 = 0 ;
+  PyObject *swig_obj[1] ;
+  
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  ecode1 = SWIG_AsVal_int(swig_obj[0], &val1);
+  if (!SWIG_IsOK(ecode1)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode1), "in method '" "prtDigDatC" "', argument " "1"" of type '" "int""'");
+  } 
+  arg1 = (int)(val1);
+  prtDigDatC(arg1);
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_targetBounds(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   uint8_t *arg1 = (uint8_t *) 0 ;
   int arg2 ;
   int arg3 ;
-  int arg4 ;
   PyArrayObject *array1 = NULL ;
   int is_new_object1 = 0 ;
   int val3 ;
   int ecode3 = 0 ;
-  int val4 ;
-  int ecode4 = 0 ;
-  PyObject *swig_obj[3] ;
+  PyObject *swig_obj[2] ;
   
-  if (!SWIG_Python_UnpackTuple(args, "targetBounds", 3, 3, swig_obj)) SWIG_fail;
+  if (!SWIG_Python_UnpackTuple(args, "targetBounds", 2, 2, swig_obj)) SWIG_fail;
   {
     npy_intp size[1] = {
       -1 
@@ -3857,12 +4142,7 @@ SWIGINTERN PyObject *_wrap_targetBounds(PyObject *SWIGUNUSEDPARM(self), PyObject
     SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "targetBounds" "', argument " "3"" of type '" "int""'");
   } 
   arg3 = (int)(val3);
-  ecode4 = SWIG_AsVal_int(swig_obj[2], &val4);
-  if (!SWIG_IsOK(ecode4)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode4), "in method '" "targetBounds" "', argument " "4"" of type '" "int""'");
-  } 
-  arg4 = (int)(val4);
-  targetBounds(arg1,arg2,arg3,arg4);
+  targetBounds(arg1,arg2,arg3);
   resultobj = SWIG_Py_Void();
   {
     if (is_new_object1 && array1)
@@ -4170,18 +4450,23 @@ fail:
 static PyMethodDef SwigMethods[] = {
 	 { "SWIG_PyInstanceMethod_New", SWIG_PyInstanceMethod_New, METH_O, NULL},
 	 { "piInit", _wrap_piInit, METH_NOARGS, NULL},
-	 { "setThresholds", _wrap_setThresholds, METH_VARARGS, NULL},
 	 { "setRef", _wrap_setRef, METH_VARARGS, NULL},
 	 { "setTarget", _wrap_setTarget, METH_VARARGS, NULL},
 	 { "setSize", _wrap_setSize, METH_VARARGS, NULL},
 	 { "setRows", _wrap_setRows, METH_VARARGS, NULL},
-	 { "getRows", _wrap_getRows, METH_NOARGS, NULL},
 	 { "setColumns", _wrap_setColumns, METH_VARARGS, NULL},
+	 { "getRows", _wrap_getRows, METH_NOARGS, NULL},
 	 { "getColumns", _wrap_getColumns, METH_NOARGS, NULL},
 	 { "printShape", _wrap_printShape, METH_NOARGS, NULL},
+	 { "getSegColumn", _wrap_getSegColumn, METH_VARARGS, NULL},
 	 { "setDigitCol", _wrap_setDigitCol, METH_VARARGS, NULL},
 	 { "setSegRows", _wrap_setSegRows, METH_VARARGS, NULL},
 	 { "setDirRows", _wrap_setDirRows, METH_VARARGS, NULL},
+	 { "getDigitCol", _wrap_getDigitCol, METH_VARARGS, NULL},
+	 { "getSegRows", _wrap_getSegRows, METH_VARARGS, NULL},
+	 { "getDirRows", _wrap_getDirRows, METH_O, NULL},
+	 { "prtDigDat", _wrap_prtDigDat, METH_O, NULL},
+	 { "prtDigDatC", _wrap_prtDigDatC, METH_O, NULL},
 	 { "targetBounds", _wrap_targetBounds, METH_VARARGS, NULL},
 	 { "findRefSegments", _wrap_findRefSegments, METH_VARARGS, NULL},
 	 { "loopInit", _wrap_loopInit, METH_NOARGS, NULL},
@@ -4959,6 +5244,10 @@ SWIG_init(void) {
   SWIG_addvarlink(globals, "dbg0", Swig_var_dbg0_get, Swig_var_dbg0_set);
   SWIG_addvarlink(globals, "dbg1", Swig_var_dbg1_get, Swig_var_dbg1_set);
   SWIG_addvarlink(globals, "updateEna", Swig_var_updateEna_get, Swig_var_updateEna_set);
+  SWIG_addvarlink(globals, "TARGET_COLUMN_RANGE", Swig_var_TARGET_COLUMN_RANGE_get, Swig_var_TARGET_COLUMN_RANGE_set);
+  SWIG_addvarlink(globals, "TARGET_ROW_RANGE", Swig_var_TARGET_ROW_RANGE_get, Swig_var_TARGET_ROW_RANGE_set);
+  SWIG_addvarlink(globals, "SUM_THRESHOLD", Swig_var_SUM_THRESHOLD_get, Swig_var_SUM_THRESHOLD_set);
+  SWIG_addvarlink(globals, "DIGIT_THRESHOLD", Swig_var_DIGIT_THRESHOLD_get, Swig_var_DIGIT_THRESHOLD_set);
 #if PY_VERSION_HEX >= 0x03000000
   return m;
 #else
