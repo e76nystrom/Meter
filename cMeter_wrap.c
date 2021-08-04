@@ -4113,6 +4113,18 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_printData(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  
+  if (!SWIG_Python_UnpackTuple(args, "printData", 0, 0, 0)) SWIG_fail;
+  printData();
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_targetBounds(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   uint8_t *arg1 = (uint8_t *) 0 ;
@@ -4467,6 +4479,7 @@ static PyMethodDef SwigMethods[] = {
 	 { "getDirRows", _wrap_getDirRows, METH_O, NULL},
 	 { "prtDigDat", _wrap_prtDigDat, METH_O, NULL},
 	 { "prtDigDatC", _wrap_prtDigDatC, METH_O, NULL},
+	 { "printData", _wrap_printData, METH_NOARGS, NULL},
 	 { "targetBounds", _wrap_targetBounds, METH_VARARGS, NULL},
 	 { "findRefSegments", _wrap_findRefSegments, METH_VARARGS, NULL},
 	 { "loopInit", _wrap_loopInit, METH_NOARGS, NULL},

@@ -54,8 +54,8 @@ T_DIGIT_DATA digitData[6];
 
 */
 
-int dbg0 = true;
-int dbg1 = true;
+int dbg0 = false;
+int dbg1 = false;
 int updateEna = false;
 
 double TARGET_COLUMN_RANGE = 0.05;
@@ -96,6 +96,7 @@ void getDirRows(int *rDirStart, int *rDirEnd, int index);
 
 void prtDigDat(int index);
 void prtDigDatC(int index);
+void printData(void);
 
 void targetBounds(uint8_t *array, int n, int w);
 void findRefSegments(uint8_t *array, int n, int w);

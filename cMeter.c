@@ -69,10 +69,10 @@ extern int dbg1;
 extern int updateEna;
 
 #define MAX_COL 24
-#define INITIAL_COLUMN_INDEX 2
+#define INITIAL_COLUMN_INDEX 3
 #define DIGIT_COLUMNS 3
 #define MAX_DIGITS 6
-#define SEG_ROWS 3
+#define SEG_ROWS 6
 
 extern double TARGET_COLUMN_RANGE;
 extern double TARGET_ROW_RANGE;
@@ -289,7 +289,7 @@ void updateRows(int top, int bottom)
     shape.bottom = bottom;
    }
    if (1)
-    printf("%s updateRows top %3d d %3d bottom %3d d %3d\n",
+    printf("%s updateRows t %3d d %3d b %3d d %3d\n",
 	   timeStr(buf, sizeof(buf)),top, deltaT, bottom, deltaB);
   }
  }
@@ -311,7 +311,7 @@ void updateColumns(int left, int right)
    if (1)
    {
     char buf[24];
-    printf("%s updateCols left %3d d %3d right %3d d %3d\n",
+    printf("%s updateCols l %3d d %3d r %3d d %3d\n",
 	   timeStr(buf, sizeof(buf)), left, deltaL, right, deltaR);
    }
   }
@@ -341,39 +341,40 @@ void printShape(void)
 void setDigitCol(int strCol, int endCol, int index, int n)
 {
 // printf("strcol %3d endCol %3d\n", strCol, endCol);
- P_DIGIT_DATA digit = &digitData[index];
- digit->strCol[n] = strCol;
- digit->endCol[n] = endCol;
- digit->col[n] = (strCol + endCol) / 2;
- digit->colRange[n] = (endCol - strCol) / 2;
+ P_DIGIT_DATA data = &digitData[index];
+ data->strCol[n] = strCol;
+ data->endCol[n] = endCol;
+ data->col[n] = (strCol + endCol) / 2;
+ data->colRange[n] = (endCol - strCol) / 2;
 }
+
+void updateSegRows(P_DIGIT_DATA data);
 
 void setSegRows(int *segRows, int n, int index)
 {
 //  printf("index %d segRows %3d %3d %3d\n",
 //	index, segRows[0], segRows[1], segRows[2]);
- P_DIGIT_DATA digit = &digitData[index];
- memcpy((void *) (digit->segRows), (void *) segRows, 3 * sizeof(int));
+ P_DIGIT_DATA data = &digitData[index];
+ memcpy((void *) (data->segRows), (void *) segRows, 3 * sizeof(int));
 
- digit->topRow = (segRows[0] + segRows[1]) / 2;
- digit->botRow = (segRows[1] + segRows[2]) / 2;
- digit->rowRange = (segRows[1] - segRows[0]) / 2 + 2;
+ updateSegRows(data);
 }
 
 void updateSegRows(P_DIGIT_DATA data)
 {
  int *segRows = data->segRows;
 
- data->topRow = (segRows[0] + segRows[1]) / 2;
- data->botRow = (segRows[1] + segRows[2]) / 2;
- data->rowRange = (segRows[1] - segRows[0]) / 2 + 2;
+ data->topRow = (segRows[1] + segRows[2]) / 2;
+ data->botRow = (segRows[3] + segRows[4]) / 2;
+ data->rowRange = (data->topRow - segRows[1] +
+		    (int) (1.5 * segRows[1] - segRows[0]));
 }
 
 void setDirRows(int dirStart, int dirEnd, int index)
 {
- P_DIGIT_DATA digit = &digitData[index];
- digit->dirStart = dirStart;
- digit->dirEnd = dirEnd;
+ P_DIGIT_DATA data = &digitData[index];
+ data->dirStart = dirStart;
+ data->dirEnd = dirEnd;
  if (dbg0)
   printf("setDirRows %d dirStart %2d dirEnd %2d\n",
 	 index, dirStart, dirEnd);
@@ -381,23 +382,23 @@ void setDirRows(int dirStart, int dirEnd, int index)
 
 void getDigitCol(int *rStrCol, int *rEndCol, int index, int n)
 {
- P_DIGIT_DATA digit = &digitData[index];
- *rStrCol = digit->strCol[n];
- *rEndCol = digit->endCol[n];
+ P_DIGIT_DATA data = &digitData[index];
+ *rStrCol = data->strCol[n];
+ *rEndCol = data->endCol[n];
 }
 
 void getSegRows(int *rSegRows, int n, int index)
 {
- P_DIGIT_DATA digit = &digitData[index];
+ P_DIGIT_DATA data = &digitData[index];
  for (int i = 0 ; i < SEG_ROWS; i++)
-  rSegRows[i] = digit->segRows[i];
+  rSegRows[i] = data->segRows[i];
 }
 
 void getDirRows(int *rDirStart, int *rDirEnd, int index)
 {
- P_DIGIT_DATA digit = &digitData[index];
- *rDirStart = digit->dirStart;
- *rDirEnd = digit->dirEnd;
+ P_DIGIT_DATA data = &digitData[index];
+ *rDirStart = data->dirStart;
+ *rDirEnd = data->dirEnd;
 }
 
 void printDigitData(P_DIGIT_DATA data)
@@ -427,6 +428,15 @@ void printDigitDataC(P_DIGIT_DATA data)
 void prtDigDatC(int index)
 {
  printDigitDataC(&digitData[index]);
+}
+
+void printData(void)
+{
+ for (int i = 0; i < MAX_DIGITS; i++)
+ {
+  prtDigDat(i);
+  prtDigDatC(i);
+ }
 }
 
 void targetBounds(uint8_t *array, int n, int w)
@@ -551,7 +561,8 @@ void findRefSegments(uint8_t *array, int n, int w)
   int *segColumn = seg[i];
   memset((void *) segColumn, 0, MAX_COL * sizeof(int));
   if (dbg0)
-   printf("%d segcolumn %12llx\n", i, (long long int) segColumn);
+   printf("%d row %3d segcolumn %12llx\n",
+	  i, vBounds[i], (long long int) segColumn);
   int *p = segColumn;
   bool findNeg = true;
   int colCount = 0;
@@ -599,15 +610,18 @@ void findRefSegments(uint8_t *array, int n, int w)
     flag = DIGIT_COLUMNS;
     dig += 1;
     if (dig < MAX_DIGITS)
-     gap = (segColumn[j+1] - col) / 2;
-    st = segColumn[j-2] - gap;
-    if (dig < MAX_DIGITS)
     {
-     en = segColumn[j+1] + gap;
+     int c1 = segColumn[j+1];
+     gap = (c1 - col) / 2;
+     st = segColumn[j-3] - gap;
+     en = (col + c1) / 2;
      w0 = en - st;
     }
     else
+    {
+     st = segColumn[j-3] - gap;
      en = st + w0;
+    }
     setDigitData(data, st, en, i);
     data += 1;
    }
@@ -643,7 +657,7 @@ void findRefSegments(uint8_t *array, int n, int w)
     lastPixel = MAX_PIXEL;
     bool skip = true;
     int segIndex = 0;
-    int strRow = 0;
+    bool change = false;
     for (int row = 0; row <= shape.height; row++)
     {
      int pixel = array[(row + y0) * w + centerCol];
@@ -660,7 +674,8 @@ void findRefSegments(uint8_t *array, int n, int w)
       {
        if (pixel <= DIGIT_THRESHOLD && lastPixel >= DIGIT_THRESHOLD)
        {
-	strRow = row;
+	segRows[segIndex++] = row;
+	change = true;
 	findNeg = false;
        }
       }
@@ -668,24 +683,29 @@ void findRefSegments(uint8_t *array, int n, int w)
       {
        if (pixel >= DIGIT_THRESHOLD && lastPixel <= DIGIT_THRESHOLD)
        {
-	int segRow = (strRow + row) / 2;
-	if (dbg0)
-	 printf("%2d ", segRow);
-	segRows[segIndex++] = segRow;
+	segRows[segIndex++] = row;
+	change = true;
 	findNeg = true;
-	if (segIndex >= 3)
-	 break;
        }
+       if (dbg0 && change)
+       {
+	printf("%2d ", row);
+	change = false;
+       }
+       if (segIndex >= SEG_ROWS)
+	break;
       }
      }
      lastPixel = pixel;
     }
+    if (dbg0)
+     printf("\n");
 
     if (segIndex == SEG_ROWS)
     {
      updateSegRows(data);
      
-     int dirStart = segRows[2];
+     int dirStart = segRows[SEG_ROWS-1];
      int dirEnd = shape.height - 1;
      for (int row = dirStart; row <= dirEnd; row++)
      {
@@ -700,7 +720,7 @@ void findRefSegments(uint8_t *array, int n, int w)
      lastPixel = MAX_PIXEL;
      for (int row = dirEnd; row > dirStart; row--)
      {
-      int pixel = array[(row + y0) * w +centerCol];
+      int pixel = array[(row + y0) * w + centerCol];
       if (pixel >= DIGIT_THRESHOLD && lastPixel <= DIGIT_THRESHOLD)
       {
        dirEnd = row - 1;
@@ -726,12 +746,18 @@ void findRefSegments(uint8_t *array, int n, int w)
   P_DIGIT_DATA d = digitData;
   for (int i = 0; i < MAX_DIGITS; i++)
   {
-   printf("%d s ", i);
-   printDigitDataC(s);
-   printf("%d d ", i);
-   printDigitDataC(d);
-   printf("\n");
+   if (dbg0)
+   {
+    printf("%d s ", i);
+    printDigitDataC(s);
+   }
    memcpy((void *) d, (void *) s, sizeof(T_DIGIT_DATA));
+   if (dbg0)
+   {
+    printf("%d d ", i);
+    printDigitDataC(d);
+    printf("\n");
+   }
    d += 1;
    s += 1;
   }
@@ -946,7 +972,7 @@ void updateReading(int val)
    int meter = m.meterVal[nxtCtr];
    int delta = meter == 0 ? 0 : val - meter;
    char buf[24];
-   printf("%s %d val %6d meter %6d delta %2d "\
+   printf("%s %d v %6d m %6d d %2d "\
 	  "n %5d r %5d f %5d\n",
 	  timeStr(buf, sizeof(buf)), nxtCtr, val, meter, delta,
 	  m.net, m.rev, m.fwd);

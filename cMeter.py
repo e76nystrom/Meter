@@ -116,6 +116,9 @@ def prtDigDat(index):
 def prtDigDatC(index):
     return _cMeter.prtDigDatC(index)
 
+def printData():
+    return _cMeter.printData()
+
 def targetBounds(array, w):
     return _cMeter.targetBounds(array, w)
 
