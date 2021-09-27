@@ -68,6 +68,8 @@ extern int dbg0;
 extern int dbg1;
 extern int updateEna;
 
+#define UPD_COUNT 3
+
 #define MAX_COL 24
 #define INITIAL_COLUMN_INDEX 3
 #define DIGIT_COLUMNS 3
@@ -96,7 +98,7 @@ void getSegColumn(int *segCol, int n, int index)
   *segCol++ = *segColumn++;
 }
 
-typedef struct lcdShape
+typedef struct sLcdShape
 {
  uint8_t *rArray;
  int rLen;
@@ -124,7 +126,20 @@ typedef struct lcdShape
 
 T_LCD_SHAPE shape;
 
-typedef struct digitData
+typedef struct sUpdShape
+{
+ int lastT;
+ int lastB;
+ int rowCount;
+ 
+ int lastL;
+ int lastR;
+ int colCount;
+} T_UPD_SHAPE, *P_UPD_SHAPE;
+
+T_UPD_SHAPE updShape;
+
+typedef struct sDigitData
 {
  int strCol[2];
  int endCol[2];
@@ -274,8 +289,17 @@ void setColumns(int left, int right)
   printf("setColumns left %3d right %3d\n", shape.left, shape.right);
 }
 
-void updateRows(int top, int bottom)
+void updateSize()
 {
+ shape.height = (shape.bottom - shape.top) + 1;
+ shape.width = (shape.right - shape.left) + 1;
+ shape.topRow = (int) (TOP_SEG * shape.height);
+ shape.botRow = (int) (BOTTOM_SEG * shape.height);
+}
+
+bool updateRows(int top, int bottom)
+{
+ bool rtn = false;
  int deltaT = top - shape.top;
  int deltaB = bottom - shape.bottom;
  if ((deltaT != 0) || (deltaB != 0))
@@ -285,18 +309,43 @@ void updateRows(int top, int bottom)
    char buf[24];
    if (updateEna)
    {
-    shape.top = top;
-    shape.bottom = bottom;
+    printf("t %3d %3d b %3d %3d rowCount %d\n",
+	   shape.top, updShape.lastT, shape.bottom, updShape.lastB,
+	   updShape.rowCount);
+    if ((shape.top != updShape.lastT) || (shape.bottom != updShape.lastB))
+    {
+     updShape.lastT = shape.top;
+     updShape.lastB = shape.bottom;
+     updShape.rowCount = UPD_COUNT;
+    }
+    else
+    {
+     if (updShape.rowCount != 0)
+     {
+      updShape.rowCount -= 1;
+      if (updShape.rowCount == 0)
+      {
+       shape.top = top;
+       shape.bottom = bottom;
+       shape.height = (shape.bottom - shape.top) + 1;
+       shape.topRow = (int) (TOP_SEG * shape.height);
+       shape.botRow = (int) (BOTTOM_SEG * shape.height);
+       rtn = true;
+      }
+     }
+    }
    }
    if (1)
-    printf("%s updateRows t %3d d %3d b %3d d %3d\n",
-	   timeStr(buf, sizeof(buf)),top, deltaT, bottom, deltaB);
+    printf("%s updateRows t %3d d %3d b %3d d %3d u %d\n",
+	   timeStr(buf, sizeof(buf)),top, deltaT, bottom, deltaB, updateEna);
   }
  }
+ return(rtn);
 }
 
-void updateColumns(int left, int right)
+bool updateColumns(int left, int right)
 {
+ bool rtn = false;
  int deltaL = left - shape.left;
  int deltaR = right - shape.right;
  if ((deltaL != 0) || (deltaR != 0))
@@ -305,17 +354,39 @@ void updateColumns(int left, int right)
   {
    if (updateEna)
    {
-    shape.left = left;
-    shape.right = right;
+    printf("t %3d %3d b %3d %3d rowCount %d\n",
+	   shape.left, updShape.lastL, shape.right, updShape.lastR,
+	   updShape.colCount);
+    if ((shape.left != updShape.lastL) || (shape.right != updShape.lastR))
+    {
+     updShape.lastL = shape.left;
+     updShape.lastR = shape.right;
+     updShape.colCount = UPD_COUNT;
+    }
+    else
+    {
+     if (updShape.colCount != 0)
+     {
+      updShape.colCount -= 1;
+      if (updShape.colCount == 0)
+      {
+       shape.left = left;
+       shape.right = right;
+       shape.width = (shape.right - shape.left) + 1;
+       rtn = true;
+      }
+     }
+    }
    }
    if (1)
    {
     char buf[24];
-    printf("%s updateCols l %3d d %3d r %3d d %3d\n",
-	   timeStr(buf, sizeof(buf)), left, deltaL, right, deltaR);
+    printf("%s updateCols l %3d d %3d r %3d d %3d u %d\n",
+	   timeStr(buf, sizeof(buf)), left, deltaL, right, deltaR, updateEna);
    }
   }
  }
+ return(rtn);
 }
 
 void getRows(int *tVal, int *bVal)
@@ -439,7 +510,7 @@ void printData(void)
  }
 }
 
-void targetBounds(uint8_t *array, int n, int w)
+int targetBounds(uint8_t *array, int n, int w)
 {
  if (dbg0)
   printf("\ncMeter targetBounds w %3d\n", w);
@@ -524,11 +595,13 @@ void targetBounds(uint8_t *array, int n, int w)
    printf("\n");
  }
 
- updateRows(rows[0], rows[1]);
- updateColumns(cols[0], cols[1]);
+ int rtn = updateRows(rows[0], rows[1]);
+ rtn |= updateColumns(cols[0], cols[1]);
 
  if (dbg0)
   printf("\nt %3d b %3d l %3d r %3d\n", rows[0], rows[1], cols[0], cols[1]);
+
+ return(rtn);
 }
 
 //void rowScan(uint8_t *array, int row, int *segColumn; int maxCol)
@@ -636,9 +709,8 @@ void findRefSegments(uint8_t *array, int n, int w)
      printf(" d %d st %3d en %3d w %2d g %2d",
 	    dig, st, en, w0, gap);
     printf("\n");
+    last = col;
    }
-
-   last = col;
   }
   if (dbg0)
    printf("\n");
@@ -978,22 +1050,30 @@ void updateReading(int val)
 	  m.net, m.rev, m.fwd);
    if (abs(delta) <= 1)
    {
+    printf("abs(delta) <= 1 delta %d\n", delta);
     m.ctr = nxtCtr;
     m.meterVal[nxtCtr] = val;
     if (delta != 0)
     {
+     printf("nxtCtr %d\n", nxtCtr);
      switch (nxtCtr)
      {
      case 0:
       break;
      case 1:
+      printf("reset net\n");
       m.net = 0;
       break;
      case 2:
+      printf("reset fwd\n");
       m.fwd = 0;
       break;
      case 3:
+      printf("reset rev\n");
       m.rev = 0;
+      break;
+     default:
+      printf("default\n");
       break;
      }
     }
@@ -1097,9 +1177,12 @@ int loopProcess(uint8_t *array, int n)
   m.delta = 0;
   if (shape.update)
   {
-   updateEna = false;
-   targetBounds(array, n, shape.rArrayW);
-   findRefSegments(array, n, shape.rArrayW);
+//   updateEna = false;
+   int update = targetBounds(array, n, shape.rArrayW);
+   if (update)
+    findRefSegments(array, n, shape.rArrayW);
+   else
+    shape.update = false;
   }
  }
  else

@@ -98,7 +98,7 @@ void prtDigDat(int index);
 void prtDigDatC(int index);
 void printData(void);
 
-void targetBounds(uint8_t *array, int n, int w);
+int targetBounds(uint8_t *array, int n, int w);
 void findRefSegments(uint8_t *array, int n, int w);
 
 void loopInit(void);

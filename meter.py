@@ -1,5 +1,5 @@
 #!/cygdrive/c/Python39/python.exe
-#*******************************************************************************
+#******************************************************************************
 
 import os
 import sys
@@ -363,6 +363,7 @@ class Meter():
                 elif ch == 'y':
                     self.retry = True
                 elif  ch == 'u':
+                    print("udpate True")
                     self.update = True
             elif self.refFile is None:
                 self.refFile = val
@@ -1424,6 +1425,8 @@ class Meter():
 
     def loopProcess(self, lcdShape, digitData):
         self.initLoopVars()
+        if LINUX:
+            cm.cvar.updateEna = int(self.update)
         while True:
             contents = urllib.request.urlopen(URL).read()
             self.targetFile = io.BytesIO(contents)
@@ -1570,7 +1573,8 @@ class Meter():
                                     "targetDrawL")
 
             if False:
-                cm.findRefSegments(self.refArray.ravel(), len(self.refArray[0]))
+                cm.findRefSegments(self.refArray.ravel(), \
+                                   len(self.refArray[0]))
                 for n, data in enumerate(digitData):
                     for j in (0, 1):
                         cm.setDigitCol(data.strCol[0], data.endCol[0], n, j)
