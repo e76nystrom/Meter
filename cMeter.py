@@ -119,8 +119,8 @@ def prtDigDatC(index):
 def printData():
     return _cMeter.printData()
 
-def targetBounds(array, w):
-    return _cMeter.targetBounds(array, w)
+def targetBounds(array, w, upd):
+    return _cMeter.targetBounds(array, w, upd)
 
 def findRefSegments(array, w):
     return _cMeter.findRefSegments(array, w)

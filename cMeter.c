@@ -249,7 +249,10 @@ void setRef(uint8_t *array, int n, int w, int h)
  shape.rArrayH = h;
 
  if (dbg0)
+ {
   printf("setRef %d n %d w %d h %d\n", *array, n, w, h);
+  fflush(stdout);
+ }
 }
 
 void setTarget(uint8_t *array, int n, int w, int h)
@@ -260,7 +263,10 @@ void setTarget(uint8_t *array, int n, int w, int h)
  shape.tArrayH = h;
 
  if (dbg0)
+ {
   printf("setTarget %d n %d w %d h %d\n", *array, n, w, h);
+  fflush(stdout);
+ }
 }
 
 void setSize(int width, int height)
@@ -278,7 +284,10 @@ void setRows(int top, int bottom)
  shape.top = top;
  shape.bottom = bottom;
  if (dbg0)
+ {
   printf("setRows top %3d bottom %3d\n", shape.top, shape.bottom);
+  fflush(stdout);
+ }
 }
 
 void setColumns(int left, int right)
@@ -286,7 +295,10 @@ void setColumns(int left, int right)
  shape.left = left;
  shape.right = right;
  if (dbg0)
+ {
   printf("setColumns left %3d right %3d\n", shape.left, shape.right);
+  fflush(stdout);
+ }
 }
 
 void updateSize()
@@ -297,94 +309,116 @@ void updateSize()
  shape.botRow = (int) (BOTTOM_SEG * shape.height);
 }
 
-bool updateRows(int top, int bottom)
+bool updateRows(int top, int bottom, int upd)
 {
  bool rtn = false;
- int deltaT = top - shape.top;
- int deltaB = bottom - shape.bottom;
- if ((deltaT != 0) || (deltaB != 0))
- {
-  if ((abs(deltaT) < 10) && (abs(deltaB) < 10))
+ if (upd)
+ {  
+  int deltaT = top - shape.top;
+  int deltaB = bottom - shape.bottom;
+  if ((deltaT != 0) || (deltaB != 0))
   {
-   char buf[24];
-   if (updateEna)
+   if ((abs(deltaT) < 10) && (abs(deltaB) < 10))
    {
-    printf("t %3d %3d b %3d %3d rowCount %d\n",
-	   shape.top, updShape.lastT, shape.bottom, updShape.lastB,
-	   updShape.rowCount);
-    if ((shape.top != updShape.lastT) || (shape.bottom != updShape.lastB))
+    char buf[24];
+    if (updateEna)
     {
-     updShape.lastT = shape.top;
-     updShape.lastB = shape.bottom;
-     updShape.rowCount = UPD_COUNT;
-    }
-    else
-    {
-     if (updShape.rowCount != 0)
+     printf("t %3d %3d b %3d %3d rowCount %d\n",
+	    shape.top, updShape.lastT, shape.bottom, updShape.lastB,
+	    updShape.rowCount);
+     if ((shape.top != updShape.lastT) || (shape.bottom != updShape.lastB))
      {
-      updShape.rowCount -= 1;
-      if (updShape.rowCount == 0)
+      updShape.lastT = shape.top;
+      updShape.lastB = shape.bottom;
+      updShape.rowCount = UPD_COUNT;
+     }
+     else
+     {
+      if (updShape.rowCount != 0)
       {
-       shape.top = top;
-       shape.bottom = bottom;
-       shape.height = (shape.bottom - shape.top) + 1;
-       shape.topRow = (int) (TOP_SEG * shape.height);
-       shape.botRow = (int) (BOTTOM_SEG * shape.height);
-       rtn = true;
+       updShape.rowCount -= 1;
+       if (updShape.rowCount == 0)
+       {
+	shape.top = top;
+	shape.bottom = bottom;
+	shape.height = (shape.bottom - shape.top) + 1;
+	shape.topRow = (int) (TOP_SEG * shape.height);
+	shape.botRow = (int) (BOTTOM_SEG * shape.height);
+	rtn = true;
+       }
       }
      }
     }
+    if (1)
+     printf("%s updateRows t %3d d %3d b %3d d %3d u %d\n",
+	    timeStr(buf, sizeof(buf)),top, deltaT, bottom, deltaB, updateEna);
    }
-   if (1)
-    printf("%s updateRows t %3d d %3d b %3d d %3d u %d\n",
-	   timeStr(buf, sizeof(buf)),top, deltaT, bottom, deltaB, updateEna);
   }
+ }
+ else
+ {
+  shape.top = top;
+  shape.bottom = bottom;
+  shape.height = (shape.bottom - shape.top) + 1;
+  shape.topRow = (int) (TOP_SEG * shape.height);
+  shape.botRow = (int) (BOTTOM_SEG * shape.height);
+  rtn = true;
  }
  return(rtn);
 }
 
-bool updateColumns(int left, int right)
+bool updateColumns(int left, int right, int upd)
 {
  bool rtn = false;
- int deltaL = left - shape.left;
- int deltaR = right - shape.right;
- if ((deltaL != 0) || (deltaR != 0))
+ if (upd)
  {
-  if ((abs(deltaL) < 10) && (abs(deltaR) < 10))
+  int deltaL = left - shape.left;
+  int deltaR = right - shape.right;
+  if ((deltaL != 0) || (deltaR != 0))
   {
-   if (updateEna)
+   if ((abs(deltaL) < 10) && (abs(deltaR) < 10))
    {
-    printf("t %3d %3d b %3d %3d rowCount %d\n",
-	   shape.left, updShape.lastL, shape.right, updShape.lastR,
-	   updShape.colCount);
-    if ((shape.left != updShape.lastL) || (shape.right != updShape.lastR))
+    if (updateEna)
     {
-     updShape.lastL = shape.left;
-     updShape.lastR = shape.right;
-     updShape.colCount = UPD_COUNT;
-    }
-    else
-    {
-     if (updShape.colCount != 0)
+     printf("t %3d %3d b %3d %3d rowCount %d\n",
+	    shape.left, updShape.lastL, shape.right, updShape.lastR,
+	    updShape.colCount);
+     if ((shape.left != updShape.lastL) || (shape.right != updShape.lastR))
      {
-      updShape.colCount -= 1;
-      if (updShape.colCount == 0)
+      updShape.lastL = shape.left;
+      updShape.lastR = shape.right;
+      updShape.colCount = UPD_COUNT;
+     }
+     else
+     {
+      if (updShape.colCount != 0)
       {
-       shape.left = left;
-       shape.right = right;
-       shape.width = (shape.right - shape.left) + 1;
-       rtn = true;
+       updShape.colCount -= 1;
+       if (updShape.colCount == 0)
+       {
+	shape.left = left;
+	shape.right = right;
+	shape.width = (shape.right - shape.left) + 1;
+	rtn = true;
+       }
       }
      }
     }
-   }
-   if (1)
-   {
-    char buf[24];
-    printf("%s updateCols l %3d d %3d r %3d d %3d u %d\n",
-	   timeStr(buf, sizeof(buf)), left, deltaL, right, deltaR, updateEna);
+    if (1)
+    {
+     char buf[24];
+     printf("%s updateCols l %3d d %3d r %3d d %3d u %d\n",
+	    timeStr(buf, sizeof(buf)), left, deltaL, right, deltaR, updateEna);
+    }
    }
   }
+ }
+ else
+ {
+  shape.left = left;
+  shape.right = right;
+  shape.width = (shape.right - shape.left) + 1;
+  rtn = true;
  }
  return(rtn);
 }
@@ -510,7 +544,7 @@ void printData(void)
  }
 }
 
-int targetBounds(uint8_t *array, int n, int w)
+int targetBounds(uint8_t *array, int n, int w, int upd)
 {
  if (dbg0)
   printf("\ncMeter targetBounds w %3d\n", w);
@@ -520,10 +554,10 @@ int targetBounds(uint8_t *array, int n, int w)
  int cr = (int) (shape.width * TARGET_COLUMN_RANGE);
 
  if (dbg0)
-  printf("t %3d b %3d l %3d r %3d rr %3d cr %3d\n",
-	 shape.top, shape.bottom, lc, rc, rr, cr);
+  printf("t %3d b %3d l %3d r %3d rr %3d cr %3d threshold %3d\n",
+	 shape.top, shape.bottom, lc, rc, rr, cr, SUM_THRESHOLD);
 
- int rows[2];
+ int rows[2] = {0, 0};
  int vBounds[2] = {shape.top, shape.bottom};
  for (int i = 0; i < 2; i++)
  {
@@ -572,11 +606,13 @@ int targetBounds(uint8_t *array, int n, int w)
 
    cSum /= tRows;
    if (dbg0)
-    printf("col %3d cSum %3d\n", col, cSum);
+    printf("col %3d cSum %3d", col, cSum);
    if (findNeg)
    {
     if ((cSum <= SUM_THRESHOLD) && (lastSum >= SUM_THRESHOLD))
     {
+     if (dbg0)
+      printf(" c0 %3d", col);
      c0 = col;
      findNeg = false;
     }
@@ -586,21 +622,27 @@ int targetBounds(uint8_t *array, int n, int w)
     if ((cSum >= SUM_THRESHOLD) && (lastSum <= SUM_THRESHOLD))
     {
      cols[i] = (col + c0) /  2;
+     if (dbg0)
+      printf(" c1 %3d cols[%d] %3d\n", col, i, cols[i]);
      break;
     }
    }
+   if (dbg0)
+    printf("\n");
    lastSum = cSum;
   }
   if (dbg0)
    printf("\n");
  }
 
- int rtn = updateRows(rows[0], rows[1]);
- rtn |= updateColumns(cols[0], cols[1]);
-
  if (dbg0)
   printf("\nt %3d b %3d l %3d r %3d\n", rows[0], rows[1], cols[0], cols[1]);
 
+ int rtn = updateRows(rows[0], rows[1], upd);
+ rtn |= updateColumns(cols[0], cols[1], upd);
+
+ if (dbg0)
+  fflush(stdout);
  return(rtn);
 }
 
@@ -633,17 +675,18 @@ void findRefSegments(uint8_t *array, int n, int w)
  {
   int *segColumn = seg[i];
   memset((void *) segColumn, 0, MAX_COL * sizeof(int));
-  if (dbg0)
-   printf("%d row %3d segcolumn %12llx\n",
-	  i, vBounds[i], (long long int) segColumn);
   int *p = segColumn;
   bool findNeg = true;
   int colCount = 0;
   int rowIndex = vBounds[i] * w + x0;
   int lastPixel = array[rowIndex - 2];
+  if (dbg0)
+   printf("%d row %3d x0 %d\n", i, vBounds[i], x0);
   for (int col = 3; col < shape.width; col++)
   {
    int pixel = array[rowIndex - col];
+   if (0)
+    printf("%3d %3d p %3d\n", col, x0-col, pixel);
    if (findNeg)
    {
     if (pixel <= DIGIT_THRESHOLD && lastPixel >= DIGIT_THRESHOLD)
@@ -834,6 +877,8 @@ void findRefSegments(uint8_t *array, int n, int w)
    s += 1;
   }
  }
+ if (dbg0)
+  fflush(stdout);
 }
 
 int decode(int result)
@@ -1000,6 +1045,9 @@ typedef struct
  int net;
  int fwd;
  int rev;
+ int netTotal;
+ int fwdTotal;
+ int revTotal;
 } T_METER, *P_METER;
 
 T_METER m;
@@ -1044,38 +1092,41 @@ void updateReading(int val)
    int meter = m.meterVal[nxtCtr];
    int delta = meter == 0 ? 0 : val - meter;
    char buf[24];
-   printf("%s %d v %6d m %6d d %2d "\
-	  "n %5d r %5d f %5d\n",
+   printf("%s %d v %6d m %6d d %2d n %5d r %5d f %5d\n",
 	  timeStr(buf, sizeof(buf)), nxtCtr, val, meter, delta,
 	  m.net, m.rev, m.fwd);
    if (abs(delta) <= 1)
    {
-    printf("abs(delta) <= 1 delta %d\n", delta);
     m.ctr = nxtCtr;
     m.meterVal[nxtCtr] = val;
     if (delta != 0)
     {
-     printf("nxtCtr %d\n", nxtCtr);
+     printf("%s delta %2d nxtCtr %d val %5d",
+	    timeStr(buf, sizeof(buf)), delta, nxtCtr, val);
      switch (nxtCtr)
      {
      case 0:
       break;
      case 1:
-      printf("reset net\n");
+      m.netTotal += m.net;
+      printf(" rst net %3d t %5d", m.net, m.netTotal);
       m.net = 0;
       break;
      case 2:
-      printf("reset fwd\n");
+      m.fwdTotal += m.fwd;
+      printf(" rst fwd %3d t %5d", m.fwd, m.fwdTotal);
       m.fwd = 0;
       break;
      case 3:
-      printf("reset rev\n");
+      m.revTotal += m.rev;
+      printf(" rst rev %3d t %5d", m.rev, m.revTotal);
       m.rev = 0;
       break;
      default:
-      printf("default\n");
+      printf(" default");
       break;
      }
+     printf("\n");
     }
    }
    else
@@ -1178,7 +1229,7 @@ int loopProcess(uint8_t *array, int n)
   if (shape.update)
   {
 //   updateEna = false;
-   int update = targetBounds(array, n, shape.rArrayW);
+   int update = targetBounds(array, n, shape.rArrayW, true);
    if (update)
     findRefSegments(array, n, shape.rArrayW);
    else

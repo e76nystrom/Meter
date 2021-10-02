@@ -41,7 +41,7 @@ COL_DELTA_THRESHOLD = 120
 REF_DELTA_THRESHOLD = 60
 SEG_COL_THRESHOLD = 30
 SEG_ROW_THRESHOLD = 60
-DIGIT_THRESHOLD = 80
+DIGIT_THRESHOLD = 90
 SUM_THRESHOLD = 90
 
 TARGET_COLUMN_RANGE = 0.05
@@ -53,6 +53,9 @@ DIGIT_COLUMNS = 3
 
 MAX_DIGITS = 6
 SEG_ROWS = 6
+
+FALSE = 0
+TRUE = 1
 
 dirConv = \
 ( \
@@ -254,25 +257,15 @@ def digitDataCopy():
 
 class Meter():
     def __init__(self):
-        self.plot1 = False          # row histogram
-        self.plot2 = False          # row sum array
-        self.plot3 = False          # upper and lower row
-        self.plot4 = False          # reference rows
-        self.plot5 = False          # digit columns
-        self.plot6 = False          # direction
-        self.plot7 = False          # target center column
-        self.plot8 = False          # target bounds
+        self.plot = [False for element in range(8 + 1)]
+
         self.save = False           # save figure
 
-        self.dbg0 = False           # general debug
-        self.dbg1 = False           # top and bottom
-        self.dbg2 = False           # right and left
-        self.dbg3 = False
+        self.dbg = [False for element in range(3 + 1)]
 
         self.draw = False           # drawing on images
         self.capture = False
         self.loop = False
-        self.retry = False
 
         self.update = False
         self.cDbg0 = False
@@ -319,31 +312,31 @@ class Meter():
                 if ch == 'p':
                     val = int(val[1:])
                     if val == 1:
-                        self.plot1 = True
+                        self.plot[1] = True # row histogram
                     elif val == 2:
-                        self.plot2 = True
+                        self.plot[2] = True # row sum array
                     elif val == 3:
-                        self.plot3 = True
+                        self.plot[3] = True # upper and lower row
                     elif val == 4:
-                        self.plot4 = True
+                        self.plot[4] = True # reference rows
                     elif val == 5:
-                        self.plot5 = True
+                        self.plot[5] = True # digit columns
                     elif val == 6:
-                        self.plot6 = True
+                        self.plot[6] = True # direction
                     elif val == 7:
-                        self.plot7 = True
+                        self.plot[7] = True # target center column
                     elif val == 8:
-                        self.plot8 = True
+                        self.plot[8] = True # target bounds
                 elif ch == 'd':
                     val = int(val[1:])
                     if val == 0:
-                        self.dbg0 = True
+                        self.dbg[0] = True # general debug
                     elif val == 1:
-                        self.dbg1 = True
+                        self.dbg[1] = True # top and bottom
                     elif val == 2:
-                        self.dbg2 = True
+                        self.dbg[2] = True # right and left
                     elif val == 3:
-                        self.dbg3 = True
+                        self.dbg[3] = True
                 elif ch == 'C':
                     val = int(val[1:])
                     if val == 0:
@@ -360,11 +353,20 @@ class Meter():
                     self.loop = True
                 elif ch == 's':
                     self.save = True
-                elif ch == 'y':
-                    self.retry = True
                 elif  ch == 'u':
                     print("udpate True")
                     self.update = True
+            elif val == "?":
+                print("meter.py [-option] [reference] [target]\n"\
+                      "p[1-8] - plot\n"\
+                      "d[0-3] - python debug\n"\
+                      "C[0-2] - c debug\n"\
+                      "c - capture one target\n"\
+                      "r - draw\n"\
+                      "l - loop\n"\
+                      "s - save plots to file\n"\
+                      "u - update reference\n"\
+                      )
             elif self.refFile is None:
                 self.refFile = val
             elif self.targetFile is None:
@@ -372,7 +374,7 @@ class Meter():
             n += 1
 
         if self.refFile is None:
-            self.refFile = "cRef-800x600-1.jpg"
+            self.refFile = "ref.jpg"
 
         if LINUX:
             self.save = True
@@ -382,7 +384,7 @@ class Meter():
         self.refGray = ImageOps.grayscale(refImage)
         refImage.close()
         self.refArray = np.asarray(self.refGray)
-        if self.dbg0:
+        if self.dbg[0]:
             print(len(self.refArray), len(self.refArray[0]),
                   self.refArray[0][0])
 
@@ -390,7 +392,7 @@ class Meter():
                                 len(self.refArray[0])).astype(int)
 
     def histogram(self):
-        if self.plot1:
+        if self.plot[1]:
             histogram = np.zeros(255)
             for val in self.rowArray:
                 histogram[val] += 1
@@ -404,7 +406,7 @@ class Meter():
 
     # find upper and lower bound of LCD display
     def verticalBounds(self, lcdShape):
-        if self.dbg1:
+        if self.dbg[1]:
             print("verticalBounds threshold %3d" % (DELTA_THRESHOLD))
         negDelta = True
         deltaTotal = 0
@@ -430,7 +432,7 @@ class Meter():
                             negDelta = False
                             deltaTotal = 0
                             hyst = 0
-                            if self.dbg1:
+                            if self.dbg[1]:
                                 blank = True
                                 char = '>'
                         else:
@@ -454,7 +456,7 @@ class Meter():
                         else:
                             deltaTotal += delta
                             hyst += 1
-                if self.dbg1:
+                if self.dbg[1]:
                     print("%crow %3d rSum %3d delta %3d dTotal %3d h %d" % \
                           (char, row, rSum, delta, deltaTotal, hyst))
                     if blank:
@@ -464,12 +466,12 @@ class Meter():
 
         lcdShape.setRows(start, end)
 
-        if self.dbg0:
+        if self.dbg[0]:
             print("str %3d minVal %3d" % (start, minVal))
             print("end %3d maxVal %3d" % (end, maxVal))
             print("top %3d bottom %3d" % (lcdShape.top, lcdShape.bottom))
 
-        if self.plot2:
+        if self.plot[2]:
             fig = plt.gcf()
             fig.set_figwidth(3 * fig.get_figwidth())
             plt.plot(self.rowArray)
@@ -485,13 +487,16 @@ class Meter():
     def horizontalBounds(self, lcdShape):
         left = 0
         right = 0
-        if self.plot3:
+        if self.plot[3]:
             fig, axs = plt.subplots(2, sharex=True)
             fig.suptitle("Plot3 Horizontal Bounds")
             fig.set_figwidth(3 * fig.get_figwidth())
             fig.set_figheight(2 * fig.get_figheight())
             n = 0
+
         for row in (lcdShape.top, lcdShape.bottom):
+            if self.dbg[2]:
+                print("\nhorizontalBounds row %3d" % (row))
             deltaMin = 0
             deltaMax = 0
             negDelta = True
@@ -511,45 +516,45 @@ class Meter():
                         else:
                             if deltaTotal > COL_DELTA_THRESHOLD:
                                 left = col
-                                if self.dbg0:
+                                if self.dbg[0]:
                                     print("start %3d" % (left))
                                 negDelta = False
                                 deltaTotal = 0
                                 deltaMin = pixel
-                                if self.dbg2:
+                                if self.dbg[2]:
                                     print()
                             else:
                                 deltaTotal = 0
-                        if self.dbg2:
-                            print("<col %3d pixel %3d delta %3d dTotal %3d" % \
+                        if self.dbg[2]:
+                            print("<col %3d pixel %3d delta %4d dTotal %3d" % \
                                   (col, pixel, delta, deltaTotal))
                     else:
                         if delta > 0:
                             deltaTotal += delta
                         else:
                             if deltaTotal > COL_DELTA_THRESHOLD:
-                                if self.dbg0:
+                                if self.dbg[0]:
                                     print("end %3d" % (right))
                                 deltaMax = pixel
                                 break
                             else:
                                 deltaTotal = 0
                                 right = col
-                        if self.dbg2:
-                            print(">col %3d pixel %3d delta %3d dTotal %3d" % \
+                        if self.dbg[2]:
+                            print(">col %3d pixel %3d delta %4d dTotal %3d" % \
                                   (col, pixel, delta, deltaTotal))
                 lastPixel = pixel
 
-            if self.plot3:
+            if self.plot[3]:
                 axs[n].plot(self.refArray[row])
                 axs[n].set_title("Row %3d %3d -> %3d" % (row, left, right))
                 axs[n].plot((left, right), [deltaMin, deltaMax])
                 n += 1
 
-            if self.dbg0:
+            if self.dbg[0]:
                 print("left %3d right %3d" % (left, right))
 
-        if self.plot3:
+        if self.plot[3]:
             if self.save:
                 plt.gcf().savefig("plot3.png")
             else:
@@ -629,14 +634,14 @@ class Meter():
         (cr, lc, rc, rr, tr, br) = self.tbVars(lcdShape)
         # array = np.asarray(self.targetGray)
 
-        if self.dbg0:
-            print("\ntargetBounds")
-            print("t %3d b %3d l %3d r %3d rr %3d cr %3d" % \
-                  (tr, br, lc, rc, rr, cr))
+        if self.dbg[0]:
+            print("\nmeter targetBounds w %3d" % (lcdShape.tArrayW))
+            print("t %3d b %3d l %3d r %3d rr %3d cr %3d threshold %3d" % \
+                  (tr, br, lc, rc, rr, cr, SUM_THRESHOLD))
 
         rows = []
         for r in (tr, br):
-            if self.dbg2:
+            if self.dbg[2]:
                 print()
             minSum = MAX_PIXEL
             for row in range(r - rr, r + rr):
@@ -647,10 +652,10 @@ class Meter():
                 if rSum < minSum:
                     minSum = rSum
                     r0 = row
-                if self.dbg2:
+                if self.dbg[2]:
                     print("row %3d rSum %3d minSum %3d" % (row, rSum, minSum))
             rows.append(r0)
-            if self.dbg2:
+            if self.dbg[2]:
                 print()
 
         cols = []
@@ -659,14 +664,14 @@ class Meter():
         for cs in (lc, rc):
             findNeg = True
             lastSum = MAX_PIXEL
-            if self.dbg0:
+            if self.dbg[0]:
                 print("col %3d -> %3d" % (cs - cr, cs + cr))
             for col in range(cs - cr, cs + cr):
                 cSum = 0
                 for row in range(r0, r1):
                     cSum += int(array[row][col])
                 cSum //= tRows
-                if self.dbg0:
+                if self.dbg[0]:
                     print("col %3d cSum %3d" % (col, cSum));
                 if findNeg:
                     if (cSum <= SUM_THRESHOLD) and (lastSum >= SUM_THRESHOLD):
@@ -677,13 +682,13 @@ class Meter():
                         cols.append((col + c0) // 2)
                         break
                 lastSum = cSum
-            if self.dbg0:
+            if self.dbg[0]:
                 print()
 
-        if self.dbg0:
+        if self.dbg[0]:
             print("t %3d b %3d l %3d r %3d" % (r0, r1, cols[0], cols[1]))
 
-        if self.plot8:
+        if self.plot[8]:
             self.drawPlot8(array, lcdShape, rows, cols)
 
         if self.draw:
@@ -704,7 +709,7 @@ class Meter():
             drawImg.line(((r, b), (l, b)), fill=WHITE_FILL)
             drawImg.line(((l, b), (l, t)), fill=WHITE_FILL)
 
-        if self.dbg0:
+        if self.dbg[0]:
             print("width %3d height %3d pixels %5d, top %3d bottom %3d" % \
                   (lcdShape.width, lcdShape.height, \
                    lcdShape.width * lcdShape.height, \
@@ -728,7 +733,7 @@ class Meter():
         for i, rowNum in enumerate((t, b)):
             row = self.refArray[rowNum]
             axs[i].plot(row[lcdShape.left:x0])
-            axs[i].set_title("Ref Row %d" % (rowNum))
+            axs[i].set_title("Ref Row %d start %d end %d" % (rowNum, x0, l))
             axs[i].plot([0, lcdShape.width], \
                         [DIGIT_THRESHOLD, DIGIT_THRESHOLD])
 
@@ -861,8 +866,8 @@ class Meter():
         refDraw.save(name + "2.png", "PNG")
 
     def rowScan(self, rowNum, lcdShape):
-        if self.dbg0:
-            print("rowScan %3d" % (rowNum))
+        if self.dbg[0]:
+            print("rowScan %3d x0 %3d" % (rowNum, lcdShape.right))
         x0 = lcdShape.right
         negDelta = True
         segColumn = []
@@ -870,7 +875,7 @@ class Meter():
         lastPixel = int(row[x0 - 2])
         for col in range(3, lcdShape.width):
             pixel = int(row[x0 - col])
-            if self.dbg0 and False:
+            if self.dbg[0] and False:
                 print("%3d %3d p %3d %s " % \
                       (col, x0-col, pixel, str(negDelta)[0]))
             if negDelta:
@@ -898,9 +903,9 @@ class Meter():
         index = 0
         digitData = []
         seg = []
-        for rowNum in (t, b):
-            if self.dbg0:
-                print("findRefSegments row %2d" % (rowNum))
+        for i, rowNum in enumerate((t, b)):
+            if self.dbg[0]:
+                print("%d findRefSegments row %2d" % (i, rowNum))
 
             segColumn = self.rowScan(rowNum, lcdShape)
 
@@ -926,15 +931,15 @@ class Meter():
                     else:
                         digitData[dig-1].setCol(st, en, index)
 
-                    if self.dbg0:
+                    if self.dbg[0]:
                         m = "%d st %3d en %3d w %2d g %2d" % \
                             (dig, st, en, w0, gap)
                 else:
                     flag -= 1
-                    if self.dbg0:
+                    if self.dbg[0]:
                         m = " "
 
-                if self.dbg0:
+                if self.dbg[0]:
                     deltaCol = col - last
                     print("j %2d col %3d %3d width %3d %s %d %s" % \
                           (j, col, x0-col, deltaCol, color, flag, m))
@@ -943,7 +948,7 @@ class Meter():
                     break
                 last = col
 
-            if self.dbg0:
+            if self.dbg[0]:
                 print()
                 for i, data in enumerate(digitData):
                     print("%d st %3d en %3d" % \
@@ -958,7 +963,7 @@ class Meter():
             enCol = data.endCol[0]
             centerCol = data.col[0]
 
-            if self.dbg0:
+            if self.dbg[0]:
                 w0 = lcdShape.width
                 print("%d st %3d %3d en %3d %3d c %3d %3d" % \
                       (n, stCol, w0-stCol, enCol, w0-enCol, \
@@ -981,17 +986,17 @@ class Meter():
                             lastPixel >= DIGIT_THRESHOLD):
                             segRows.append(row)
                             findNeg = False
-                            if self.dbg0:
+                            if self.dbg[0]:
                                 found = True
                     else:
                         if (pixel >= DIGIT_THRESHOLD and \
                             lastPixel <= DIGIT_THRESHOLD):
                             segRows.append(row)
                             findNeg = True
-                            if self.dbg0:
+                            if self.dbg[0]:
                                 found = True
 
-                    if self.dbg0 and found:
+                    if self.dbg[0] and found:
                         found = False
                         print(" %3d" % (row), end="")
                         
@@ -1021,16 +1026,16 @@ class Meter():
 
                 data.setDirRows(dirStart, dirEnd)
 
-            if self.dbg0:
+            if self.dbg[0]:
                 print()
 
         if self.draw:
             self.refDraw(self.refGray, lcdShape, seg, digitData)
 
-        if self.plot4:
+        if self.plot[4]:
             self.drawPlot4(self.refArray, lcdShape, seg, digitData)
 
-        if self.plot5:
+        if self.plot[5]:
             self.drawPlot5(self.refArray, lcdShape, digitData)
 
         return digitData
@@ -1301,10 +1306,10 @@ class Meter():
         if self.draw:
             self.tDraw(self.targetGray, lcdShape, digitData)
 
-        if self.plot6:
+        if self.plot[6]:
             self.drawPlot6(targetArray, lcdShape, digitData)
             
-        if self.plot7:
+        if self.plot[7]:
             self.drawPlot7(targetArray, lcdShape, digitData)
 
         meterVal = 0
@@ -1313,7 +1318,7 @@ class Meter():
         dirVal = 0
         for i, data in enumerate(digitData):
             result = self.readSegments(targetArray, lcdShape, data, i)
-            if self.dbg0:
+            if self.dbg[0]:
                 print("result %02x %d" % (result, self.decode(result)))
             meterVal += meterMult * self.decode(result)
             meterMult *= 10
@@ -1488,10 +1493,10 @@ class Meter():
 
         self.openRef()
 
-        if self.plot1:
+        if self.plot[1]:
             self.histogram()
 
-        lcdShape = LcdShape(self.refArray, self.dbg0)
+        lcdShape = LcdShape(self.refArray, self.dbg[0])
         self.verticalBounds(lcdShape)
         self.horizontalBounds(lcdShape)
         self.cropRef(lcdShape)
@@ -1505,6 +1510,8 @@ class Meter():
             else:
                 tArray = self.refArray
 
+            print("call setup cm lcdShape")
+            sys.stdout.flush()
             cm.setRef(self.refArray.ravel(), len(self.refArray[0]), \
                       len(self.refArray))
             cm.setSize(lcdShape.width, lcdShape.height)
@@ -1513,18 +1520,22 @@ class Meter():
 
             if True:
                 cm.cvar.updateEna = int(True)
-                cm.targetBounds(tArray.ravel(), len(tArray[0]))
-                if self.dbg0:
+                print("call cm.targetBounds 1")
+                sys.stdout.flush()
+                cm.targetBounds(tArray.ravel(), len(tArray[0]), FALSE)
+                if self.dbg[0]:
                     cm.printShape()
 
                     lcdShape.print()
                 lcdShape.set(cm.getRows(), cm.getColumns())
-                if self.dbg0:
+                if self.dbg[0]:
                     lcdShape.print()
             cm.cvar.updateEna = int(self.update)
         else:
             self.targetGray = self.refGray
-            (rows, cols) = self.targetBounds(self.refArray, lcdShape)
+            sys.stdout.flush()
+            print("call self.targetBounds 1")
+            (rows, cols) = self.targetBounds(self.refArray, lcdShape, FALSE)
             lcdShape.set(rows, cols)
 
         digitData = self.findRefSegments(lcdShape)
@@ -1535,10 +1546,12 @@ class Meter():
                 
                 cm.cvar.updateEna = 1
                 refArray = self.refArray
-                cm.targetBounds(refArray.ravel(), len(refArray[0]))
+                print("call cm.targetBounds 2")
+                sys.stdout.flush()
+                cm.targetBounds(refArray.ravel(), len(refArray[0]), FALSE)
                 shape = LcdShape(refArray)
                 shape.get()
-                if self.dbg0:
+                if self.dbg[0]:
                     shape.print()
 
                 cm.findRefSegments(refArray.ravel(), len(refArray[0]))
@@ -1547,11 +1560,11 @@ class Meter():
                 for index in range(MAX_DIGITS):
                     data = DigitData(0, 0)
                     tmpData.append(data)
-                    if self.dbg0:
+                    if self.dbg[0]:
                         cm.prtDigDat(index)
                         cm.prtDigDatC(index)
                     data.get(index)
-                    if self.dbg0:
+                    if self.dbg[0]:
                         print("%d " % (index), end="")
                         data.print()
                         data.printC()
@@ -1562,10 +1575,10 @@ class Meter():
                     cm.getSegColumn(segColumns, index)
                     seg.append(list(segColumns))
                 
-                if self.plot4:
+                if self.plot[4]:
                     self.drawPlot4(refArray, shape, seg, tmpData, "4a")
 
-                if self.plot5:
+                if self.plot[5]:
                     self.drawPlot5(refArray, shape, tmpData, "5a")
 
                 if self.draw:
@@ -1599,12 +1612,15 @@ class Meter():
 
             targetArray = self.openTarget(self.targetFile, lcdShape)
             if LINUX:
-                cm.targetBounds(targetArray.ravel(), len(targetArray[0]))
+                print("call cm.targetBounds 3")
+                sys.stdout.flush()
+                cm.targetBounds(targetArray.ravel(), len(targetArray[0]), FALSE)
                 cm.printShape();
+
+            print("call self.targetBounds 2")
+            sys.stdout.flush()
             self.targetBounds(targetArray, lcdShape)
-            if LINUX and False:
-                print("targetBounds c %d ns python %d ns" % \
-                      (tCBounds, tPBounds))
+
             if LINUX:
                 val = 0
                 dirVal = 0

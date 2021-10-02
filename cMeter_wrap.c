@@ -4130,13 +4130,17 @@ SWIGINTERN PyObject *_wrap_targetBounds(PyObject *SWIGUNUSEDPARM(self), PyObject
   uint8_t *arg1 = (uint8_t *) 0 ;
   int arg2 ;
   int arg3 ;
+  int arg4 ;
   PyArrayObject *array1 = NULL ;
   int is_new_object1 = 0 ;
   int val3 ;
   int ecode3 = 0 ;
-  PyObject *swig_obj[2] ;
+  int val4 ;
+  int ecode4 = 0 ;
+  PyObject *swig_obj[3] ;
+  int result;
   
-  if (!SWIG_Python_UnpackTuple(args, "targetBounds", 2, 2, swig_obj)) SWIG_fail;
+  if (!SWIG_Python_UnpackTuple(args, "targetBounds", 3, 3, swig_obj)) SWIG_fail;
   {
     npy_intp size[1] = {
       -1 
@@ -4154,8 +4158,13 @@ SWIGINTERN PyObject *_wrap_targetBounds(PyObject *SWIGUNUSEDPARM(self), PyObject
     SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "targetBounds" "', argument " "3"" of type '" "int""'");
   } 
   arg3 = (int)(val3);
-  targetBounds(arg1,arg2,arg3);
-  resultobj = SWIG_Py_Void();
+  ecode4 = SWIG_AsVal_int(swig_obj[2], &val4);
+  if (!SWIG_IsOK(ecode4)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode4), "in method '" "targetBounds" "', argument " "4"" of type '" "int""'");
+  } 
+  arg4 = (int)(val4);
+  result = (int)targetBounds(arg1,arg2,arg3,arg4);
+  resultobj = SWIG_From_int((int)(result));
   {
     if (is_new_object1 && array1)
     {
