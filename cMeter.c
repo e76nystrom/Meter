@@ -326,6 +326,7 @@ bool updateRows(int top, int bottom, int upd)
      printf("t %3d %3d b %3d %3d rowCount %d\n",
 	    shape.top, updShape.lastT, shape.bottom, updShape.lastB,
 	    updShape.rowCount);
+ 
      if ((shape.top != updShape.lastT) || (shape.bottom != updShape.lastB))
      {
       updShape.lastT = shape.top;
@@ -349,9 +350,11 @@ bool updateRows(int top, int bottom, int upd)
       }
      }
     }
+ 
     if (1)
-     printf("%s updateRows t %3d d %3d b %3d d %3d u %d\n",
-	    timeStr(buf, sizeof(buf)),top, deltaT, bottom, deltaB, updateEna);
+     printf("%s updateRows %d t %3d d %3d b %3d d %3d u %d ctr %d\n",
+	    timeStr(buf, sizeof(buf)), rtn, top, deltaT, bottom, deltaB,
+	    updateEna, updShape.rowCount);
    }
   }
  }
@@ -383,6 +386,7 @@ bool updateColumns(int left, int right, int upd)
      printf("t %3d %3d b %3d %3d rowCount %d\n",
 	    shape.left, updShape.lastL, shape.right, updShape.lastR,
 	    updShape.colCount);
+
      if ((shape.left != updShape.lastL) || (shape.right != updShape.lastR))
      {
       updShape.lastL = shape.left;
@@ -404,11 +408,13 @@ bool updateColumns(int left, int right, int upd)
       }
      }
     }
+
     if (1)
     {
      char buf[24];
-     printf("%s updateCols l %3d d %3d r %3d d %3d u %d\n",
-	    timeStr(buf, sizeof(buf)), left, deltaL, right, deltaR, updateEna);
+     printf("%s updateCols %d l %3d d %3d r %3d d %3d u %d ctr %d\n",
+	    timeStr(buf, sizeof(buf)), rtn, left, deltaL, right, deltaR,
+	    updateEna, updShape.colCount);
     }
    }
   }
@@ -1136,7 +1142,7 @@ void updateReading(int val)
  }
 }
 
-int updateDirection(int dirIndex)
+int updateDirection(int dirIndex, int *dirError)
 {
  if (dirIndex != m.lastDir)
  {
@@ -1156,7 +1162,8 @@ int updateDirection(int dirIndex)
      dirIndex = 5;
    }
    printf("*+dirIndex %d lastDir %d\n", dirIndex, m.lastDir);
-  }
+   *dirError = 1;
+ }
 
   int delta = dirIndex - m.lastDir;
   if (m.dirSign > 0)
@@ -1216,19 +1223,20 @@ int loopProcess(uint8_t *array, int n)
  int val;
  int dirIndex;
  int dirVal;
+ int dirError = 0;
+ 
  readDisplay(array, n, &val, &dirIndex, &dirVal);
  shape.update = false;
  if (m.sync)
  {
   updateReading(val);
-  dirIndex = updateDirection(dirIndex);
+  dirIndex = updateDirection(dirIndex, &dirError);
   printf("%d %6d 0x%02x %d %2d n %3d f %3d r %3d\n",
 	 m.ctr, val, dirVal, dirIndex, m.delta,
 	 m.net, m.fwd, m.rev);
   m.delta = 0;
   if (shape.update)
   {
-//   updateEna = false;
    int update = targetBounds(array, n, shape.rArrayW, true);
    if (update)
     findRefSegments(array, n, shape.rArrayW);
@@ -1265,10 +1273,11 @@ int loopProcess(uint8_t *array, int n)
    m.lastVal = val;
   }
 
-  updateDirection(dirIndex);
+  int dirError = 0;
+  updateDirection(dirIndex, &dirError);
  }
  fflush(stdout);
- return(shape.update);
+ return(dirError);
 }
 
 double inplace(double *invec, int n)

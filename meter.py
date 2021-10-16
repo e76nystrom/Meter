@@ -6,13 +6,14 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw, ImageOps
-from time import sleep, time_ns
+from time import sleep
 from platform import system
 
 import urllib.request
 import io
 from datetime import datetime
 from pytz import timezone
+from http.client import IncompleteRead
 # from collections import namedtuple
 
 LINUX = system() == 'Linux'
@@ -58,7 +59,7 @@ FALSE = 0
 TRUE = 1
 
 dirConv = \
-( \
+(
   99,				# 0x00
   99,                           # 0x01
   99,                           # 0x02
@@ -215,6 +216,7 @@ class DigitData():
         self.botRow = (segRows[3] + segRows[4]) // 2
         self.rowRange = (self.topRow - segRows[1] + \
                          int(1.5 * (segRows[1] - segRows[0])))
+
     def setDirRows(self, dirStart, dirEnd):
         self.dirStart = dirStart
         self.dirEnd = dirEnd
@@ -404,8 +406,53 @@ class Meter():
                 plt.show()
             plt.close()
 
+    def vertical1(self, lcdShape):
+        deltaArray = [0 for i in range(len(self.rowArray))]
+        minVal = MAX_PIXEL
+        minRow = 0
+        maxVal = -MAX_PIXEL
+        maxRow = 0
+        rowLen = len(self.rowArray)
+        rowLast = 0
+        for row in range(5, rowLen):
+            delta = self.rowArray[row] - self.rowArray[rowLast]
+            deltaArray[row] = delta
+            if delta < minVal:
+                minVal = delta
+                minRow = row
+            if delta > maxVal:
+                maxVal = delta
+                maxRow = rowLast
+            rowLast += 1
+        print("r %3d l %3d" % (minRow, maxRow))
+        lcdShape.setRows(minRow, maxRow)
+
+        if self.plot[2]:
+            fig, axs = plt.subplots(2, sharex=True)
+            fig.set_figwidth(3 * fig.get_figwidth())
+            fig.set_figheight(2 * fig.get_figheight())
+            axis = axs[0]
+            axis.plot(self.rowArray)
+            y = self.rowArray[minRow]
+            axis.plot((minRow, minRow), (y - 10, y + 50))
+            y = self.rowArray[maxRow]
+            axis.plot((maxRow, maxRow), (y - 10, y + 50))
+            axis.set_title("Row Array")
+            axis = axs[1]
+            axis.plot(deltaArray)
+            axis.plot((minRow, minRow), (0, minVal))
+            axis.plot((maxRow, maxRow), (0, maxVal))
+            axis.set_title("Delta Array")
+            if self.save:
+                fig.savefig("plot4.png")
+            else:
+                plt.show()
+            plt.close()
+
     # find upper and lower bound of LCD display
     def verticalBounds(self, lcdShape):
+        self.vertical1(lcdShape)
+        return
         if self.dbg[1]:
             print("verticalBounds threshold %3d" % (DELTA_THRESHOLD))
         negDelta = True
@@ -483,8 +530,68 @@ class Meter():
                 plt.show()
             plt.close()
 
+    def horizontal1(self, lcdShape):
+        if self.plot[3]:
+            fig, axs = plt.subplots(4, sharex=True)
+            fig.suptitle("Plot3 Horizontal Bounds")
+            fig.set_figwidth(3 * fig.get_figwidth())
+            fig.set_figheight(2 * fig.get_figheight())
+            n = 0
+
+        refMaxCol = len(self.refArray[0])
+        refMidCol = refMaxCol // 2
+        for row in (lcdShape.top, lcdShape.bottom - 5):
+            sumArray = [0 for i in range(refMaxCol)]
+            for r in range(row, row + 5):
+                for col, pixel in enumerate(self.refArray[row]):
+                    sumArray[col] += pixel
+            for col in range(refMaxCol):
+                sumArray[col] //= 5
+
+            deltaArray = [0 for i in range(refMaxCol)]
+            minVal = MAX_PIXEL
+            minCol = 0
+            maxVal = -MAX_PIXEL
+            maxCol = 0
+            colLast = 0
+            for col in range(5, refMaxCol):
+                delta = sumArray[col] - sumArray[colLast]
+                deltaArray[col] = delta
+                if col < refMidCol:
+                    if delta < minVal:
+                        minVal = delta
+                        minCol = col
+                else:
+                    if delta > maxVal:
+                        maxVal = delta
+                        maxCol = colLast
+                colLast += 1
+
+            if self.plot[3]:
+                axs[n].plot(sumArray)
+                axs[n].set_title("Row %3d %3d -> %3d" % (row, minCol, maxCol))
+                axs[n].plot((minCol, minCol), (0, MAX_PIXEL))
+                axs[n].plot((maxCol, maxCol), (0, MAX_PIXEL))
+                n += 1
+                axs[n].plot(deltaArray)
+                axs[n].plot((minCol, minCol), (0, minVal))
+                axs[n].plot((maxCol, maxCol), (0, maxVal))
+                n += 1
+
+            print("row %3d t %3d b %3d" % (row, minCol, maxCol))
+
+        lcdShape.setColumns(minCol, maxCol)
+
+        if self.plot[3]:
+            if self.save:
+                plt.gcf().savefig("plot3.png")
+            else:
+                plt.show()
+                
     # find left and right bound of LCD display
     def horizontalBounds(self, lcdShape):
+        self.horizontal1(lcdShape)
+        return
         left = 0
         right = 0
         if self.plot[3]:
@@ -1182,7 +1289,7 @@ class Meter():
                 if pixel > DIGIT_THRESHOLD:
                     skip = False
             else:
-                if lastPixel <= DIGIT_THRESHOLD and pixel >= DIGIT_THRESHOLD:
+                if lastPixel <= DIGIT_THRESHOLD <= pixel:
                     result = 1
                     break
             lastPixel = pixel
@@ -1199,6 +1306,14 @@ class Meter():
         else:
             self.readError += 1
             print("readError %3d " % (self.readError), end='')
+        print(name)
+
+    def saveDirError(self, image, lcdShape, digitData):
+        self.errCtr += 1
+        name = "err-%03d-%s.png" % (self.errCtr, timeStr()[4:])
+        self.tDraw(image, lcdShape, digitData)
+        self.dirError += 1
+        print("dirError %3d " % (self.dirError), end='')
         print(name)
 
     def openTarget(self, targetFile, lcdShape):
@@ -1223,7 +1338,7 @@ class Meter():
             # targetDraw.save("targetDraw0.png", "PNG")
         return targetArray
 
-    def tDraw(self, image, lcdShape, digitData, name="targetDraw"):
+    def tDraw(self, image, lcdShape, digitData, name="targetDraw2"):
         targetDraw = image.copy()
         draw1 = ImageDraw.Draw(targetDraw)
         l = lcdShape.left
@@ -1258,7 +1373,7 @@ class Meter():
 
             d(((colT, dirT), (colT, dirB)), fill=WHITE_FILL)
 
-        targetDraw.save(name + "2.png", "PNG")
+        targetDraw.save(name + ".png", "PNG")
 
     def drawPlot6(self, array, lcdShape, digitData):
         fig, axs = plt.subplots(3, 2, sharex=True)
@@ -1429,18 +1544,36 @@ class Meter():
         return dirIndex
 
     def loopProcess(self, lcdShape, digitData):
+        dirErrCount = 0
         self.initLoopVars()
         if LINUX:
             cm.cvar.updateEna = int(self.update)
         while True:
-            contents = urllib.request.urlopen(URL).read()
-            self.targetFile = io.BytesIO(contents)
+            retry = 3
+            while True:
+                try:
+                    contents = urllib.request.urlopen(URL).read()
+                    self.targetFile = io.BytesIO(contents)
+                    break
+                except IncompleteRead:
+                    print("IncompleteRead retry %d" % (retry))
+                    retry -= 1
+                    if retry <= 0:
+                        sys.exit()
+                    sleep(.25)
+                    
             targetArray = self.openTarget(self.targetFile, lcdShape)
 
             if LINUX:
-                update = cm.loopProcess(targetArray.ravel())
-                # if update:
-                #     cm.targetBounds(targetArray.ravel(), len(targetArray[0]))
+                dirError = cm.loopProcess(targetArray.ravel())
+                if dirError != 0:
+                    # dirErrCount += 1
+                    # if dirErrCount == 3:
+                    if self.dirError < 100:
+                        self.saveDirError(self.targetImage, lcdShape, digitData)
+                else:
+                    dirErrCount = 0
+                    
                 sleep(.25)
                 continue
 
@@ -1535,7 +1668,7 @@ class Meter():
             self.targetGray = self.refGray
             sys.stdout.flush()
             print("call self.targetBounds 1")
-            (rows, cols) = self.targetBounds(self.refArray, lcdShape, FALSE)
+            (rows, cols) = self.targetBounds(self.refArray, lcdShape)
             lcdShape.set(rows, cols)
 
         digitData = self.findRefSegments(lcdShape)
@@ -1593,7 +1726,7 @@ class Meter():
                         cm.setDigitCol(data.strCol[0], data.endCol[0], n, j)
                     cm.setSegRows(np.array(data.segRows, np.int32), n)
                     cm.setDirRows(data.dirStart, data.dirEnd, n)
-            cm.loopInit();
+            cm.loopInit()
 
         if self.loop:
             os.system(rm + 'err*.png')
