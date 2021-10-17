@@ -1149,21 +1149,25 @@ int updateDirection(int dirIndex, int *dirError)
   if (dirIndex == DIR_INV)
   {
    dirIndex = m.lastDir;
-   if (m.dirSign > 0)
-   {
-    dirIndex += 1;
-    if (dirIndex > 5)
-     dirIndex = 0;
+   if (0)
+   {    
+    if (m.dirSign > 0)
+    {
+     dirIndex += 1;
+     if (dirIndex > 5)
+      dirIndex = 0;
+    }
+    else if (m.dirSign < 0)
+    {
+     dirIndex -= 1;
+     if (dirIndex < 0)
+      dirIndex = 5;
+    }
    }
-   else if (m.dirSign < 0)
-   {
-    dirIndex -= 1;
-    if (dirIndex < 0)
-     dirIndex = 5;
-   }
-   printf("*+dirIndex %d lastDir %d\n", dirIndex, m.lastDir);
+   printf("*+dirIndex %d\n", dirIndex);
    *dirError = 1;
- }
+   return dirIndex;
+  }
 
   int delta = dirIndex - m.lastDir;
   if (m.dirSign > 0)

@@ -1368,7 +1368,6 @@ class Meter():
         r = lcdShape.right
         t = lcdShape.top
         b = lcdShape.bottom
-        print(image.mode)
         color = image.mode == 'RGB'
 
         d = draw1.line
@@ -1558,6 +1557,8 @@ class Meter():
             if dirIndex == 99:
                 # self.saveError(self.targetImage, self.ctr, True)
                 dirIndex = self.lastDir
+                return dirIndex
+            
                 if self.dirSign > 0:
                     dirIndex += 1
                     if dirIndex > 5:
@@ -1594,6 +1595,7 @@ class Meter():
         self.initLoopVars()
         if LINUX:
             cm.cvar.updateEna = int(self.update)
+
         while True:
             retry = 3
             while True:
@@ -1613,10 +1615,10 @@ class Meter():
             if LINUX:
                 dirError = cm.loopProcess(targetArray.ravel())
                 if dirError != 0:
-                    # dirErrCount += 1
-                    # if dirErrCount == 3:
                     if self.dirError < 100:
-                        self.saveDirError(self.targetImage, lcdShape, digitData)
+                        dirErrCount += 1
+                        if dirErrCount == 1:
+                            self.saveDirError(self.targetImage, lcdShape, digitData)
                 else:
                     dirErrCount = 0
                     
