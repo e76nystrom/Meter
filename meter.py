@@ -5,7 +5,7 @@ import os
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
-from PIL import Image, ImageDraw, ImageOps
+from PIL import Image, ImageDraw, ImageOps, ImageColor
 from time import sleep
 from platform import system
 
@@ -382,9 +382,9 @@ class Meter():
             self.save = True
 
     def openRef(self):
-        refImage = Image.open(self.refFile)
-        self.refGray = ImageOps.grayscale(refImage)
-        refImage.close()
+        self.refImage = Image.open(self.refFile)
+        self.refGray = ImageOps.grayscale(self.refImage)
+        #refImage.close()
         self.refArray = np.asarray(self.refGray)
         if self.dbg[0]:
             print(len(self.refArray), len(self.refArray[0]),
@@ -709,7 +709,6 @@ class Meter():
 
     def tbDraw(self, image, lcdShape, rows, cols):
         (cr, lc, rc, rr, tr, br) = self.tbVars(lcdShape)
-
         targetDraw = image.copy()
         draw1 = ImageDraw.Draw(targetDraw)
         d = draw1.line
@@ -921,13 +920,24 @@ class Meter():
         t = lcdShape.topRow + y0
         b = lcdShape.botRow + y0
 
+        if image.mode == 'RGB':
+            fill0 = ImageColor.getrgb("red")
+            fill1 = ImageColor.getrgb("blue")
+            fill2 = ImageColor.getrgb("green")
+            fill3 = ImageColor.getrgb("yellow")
+        else:
+            fill0 = BLACK_FILL
+            fill1 = WHITE_FILL
+            fill2 = GRAY_FILL
+            fill3 = GRAY_FILL
+
         refDraw = image.copy()
         d = ImageDraw.Draw(refDraw).line
-        d(((l, t), (r, t)), fill=BLACK_FILL)
-        d(((l, b), (r, b)), fill=BLACK_FILL)
-        refDraw.save("refDraw0.png", "PNG")
+        d(((l, t), (r, t)), fill=fill0)
+        d(((l, b), (r, b)), fill=fill0)
+        refDraw.save(name + "0.png", "PNG")
 
-        refDraw = self.refGray.copy()
+        refDraw = image.copy()
         d = ImageDraw.Draw(refDraw).line
 
         h = lcdShape.height
@@ -935,7 +945,8 @@ class Meter():
         for i, (ms, me) in enumerate(((0, mark), (mark, h))):
             segColumn = seg[i]
             for j, col in enumerate(segColumn):
-                fill = WHITE_FILL if (j & 1) == 0 else BLACK_FILL
+                fill = fill1 if (j & 1) == 0 else fill0
+                print(j, col, fill)
                 d(((x0 - col, ms + y0), \
                    (x0 - col, me + y0)), fill=fill)
 
@@ -945,10 +956,10 @@ class Meter():
 
                 if (ms == 0):
                     d(((x0 - st, ms + y0), \
-                       (x0 - st, me + y0)), fill=GRAY_FILL)
+                       (x0 - st, me + y0)), fill=fill2)
                     if dig == MAX_DIGITS - 1:
                         d(((x0 - en, ms + y0), \
-                           (x0 - en, me+ y0)), fill=GRAY_FILL)
+                           (x0 - en, me+ y0)), fill=fill2)
 
         refDraw.save(name + "1.png", "PNG")
 
@@ -956,19 +967,30 @@ class Meter():
         d = ImageDraw.Draw(refDraw).line
 
         for dig, data in enumerate(digitData):
+            segRows = data.segRows
             st = data.strCol[i]
             en = data.endCol[i]
             centerCol = data.col[i]
-            d(((x0 - centerCol, 0 + y0), \
-               (x0 - centerCol, h + y0)), fill=BLACK_FILL)
-            d(((x0 - st, 0 + y0), \
-               (x0 - st, h + y0)), fill=WHITE_FILL)
-            d(((x0 - en, 0 + y0), \
-               (x0 - en, h + y0)), fill=WHITE_FILL)
+            d(((x0 - centerCol, segRows[0] + y0), \
+               (x0 - centerCol, segRows[-1] + y0)), fill=fill0)
 
-            for row in data.segRows:
-                d(((lcdShape.left, y0 + row), \
-                   (lcdShape.right, y0 + row)), fill=GRAY_FILL)
+            d(((x0 - centerCol, data.dirStart + y0), \
+               (x0 - centerCol, data.dirEnd + y0)), fill=fill3)
+
+            d(((x0 - st, segRows[0] + y0), \
+               (x0 - st, segRows[2] + y0)), fill=fill1)
+            d(((x0 - en, segRows[3] + y0), \
+               (x0 - en, segRows[5]+ y0)), fill=fill2)
+
+            d(((x0 - st, data.topRow + y0), \
+               (x0 - en, data.topRow + y0)), fill=fill0)
+            d(((x0 - st, data.botRow + y0), \
+               (x0 - en, data.botRow + y0)), fill=fill1)
+
+            for seg, row in enumerate(segRows):
+                fill = fill2 if ((seg ^ dig) & 1) == 0 else fill3
+                d(((x0 - st, y0 + row), \
+                   (x0 - en, y0 + row)), fill=fill)
 
         refDraw.save(name + "2.png", "PNG")
 
@@ -1137,7 +1159,8 @@ class Meter():
                 print()
 
         if self.draw:
-            self.refDraw(self.refGray, lcdShape, seg, digitData)
+            # self.refDraw(self.refGray, lcdShape, seg, digitData)
+            self.refDraw(self.refImage, lcdShape, seg, digitData)
 
         if self.plot[4]:
             self.drawPlot4(self.refArray, lcdShape, seg, digitData)
@@ -1310,8 +1333,8 @@ class Meter():
 
     def saveDirError(self, image, lcdShape, digitData):
         self.errCtr += 1
-        name = "err-%03d-%s.png" % (self.errCtr, timeStr()[4:])
-        self.tDraw(image, lcdShape, digitData)
+        name = "dirErr-%03d-%s" % (self.errCtr, timeStr()[4:])
+        self.tDraw(self.targetImage, lcdShape, digitData, name)
         self.dirError += 1
         print("dirError %3d " % (self.dirError), end='')
         print(name)
@@ -1345,12 +1368,21 @@ class Meter():
         r = lcdShape.right
         t = lcdShape.top
         b = lcdShape.bottom
+        print(image.mode)
+        color = image.mode == 'RGB'
 
         d = draw1.line
-        d(((l, t), (r, t)), fill=WHITE_FILL)
-        d(((r, t), (r, b)), fill=WHITE_FILL)
-        d(((r, b), (l, b)), fill=WHITE_FILL)
-        d(((l, b), (l, t)), fill=WHITE_FILL)
+        if color:
+            fill = ImageColor.getrgb("yellow")
+            d(((l, t), (r, t)), fill=fill)
+            d(((r, t), (r, b)), fill=fill)
+            d(((r, b), (l, b)), fill=fill)
+            d(((l, b), (l, t)), fill=fill)
+        else:
+            d(((l, t), (r, t)), fill=WHITE_FILL)
+            d(((r, t), (r, b)), fill=WHITE_FILL)
+            d(((r, b), (l, b)), fill=WHITE_FILL)
+            d(((l, b), (l, t)), fill=WHITE_FILL)
 
         y0 = lcdShape.top
         for data in digitData:
@@ -1362,16 +1394,30 @@ class Meter():
             rowRange = data.rowRange
             dirT = data.dirStart + y0
             dirB = data.dirEnd + y0
-            d(((colT, topRow), (colT+colRangeT, topRow)), fill=BLACK_FILL)
-            d(((colT, topRow), (colT-colRangeT, topRow)), fill=WHITE_FILL)
-            d(((colB, botRow), (colB+colRangeT, botRow)), fill=WHITE_FILL)
-            d(((colB, botRow), (colB-colRangeT, botRow)), fill=BLACK_FILL)
+            if color:
+                fill0 = ImageColor.getrgb("red")
+                fill1 = ImageColor.getrgb("blue")
+                d(((colT, topRow), (colT+colRangeT, topRow)), fill=fill0)
+                d(((colT, topRow), (colT-colRangeT, topRow)), fill=fill1)
+                d(((colB, botRow), (colB+colRangeT, botRow)), fill=fill1)
+                d(((colB, botRow), (colB-colRangeT, botRow)), fill=fill0)
 
-            d(((colT, topRow), (colT, topRow-rowRange)), fill=BLACK_FILL)
-            d(((colT, topRow), (colT, topRow+rowRange)), fill=WHITE_FILL)
-            d(((colT, botRow), (colT, botRow+rowRange)), fill=BLACK_FILL)
+                d(((colT, topRow), (colT, topRow-rowRange)), fill=fill0)
+                d(((colT, topRow), (colT, topRow+rowRange)), fill=fill1)
+                d(((colT, botRow), (colT, botRow+rowRange)), fill=fill0)
 
-            d(((colT, dirT), (colT, dirB)), fill=WHITE_FILL)
+                d(((colT, dirT), (colT, dirB)), fill=fill1)
+            else:
+                d(((colT, topRow), (colT+colRangeT, topRow)), fill=BLACK_FILL)
+                d(((colT, topRow), (colT-colRangeT, topRow)), fill=WHITE_FILL)
+                d(((colB, botRow), (colB+colRangeT, botRow)), fill=WHITE_FILL)
+                d(((colB, botRow), (colB-colRangeT, botRow)), fill=BLACK_FILL)
+
+                d(((colT, topRow), (colT, topRow-rowRange)), fill=BLACK_FILL)
+                d(((colT, topRow), (colT, topRow+rowRange)), fill=WHITE_FILL)
+                d(((colT, botRow), (colT, botRow+rowRange)), fill=BLACK_FILL)
+
+                d(((colT, dirT), (colT, dirB)), fill=WHITE_FILL)
 
         targetDraw.save(name + ".png", "PNG")
 
@@ -1715,7 +1761,7 @@ class Meter():
                     self.drawPlot5(refArray, shape, tmpData, "5a")
 
                 if self.draw:
-                    self.tDraw(self.refGray, shape, tmpData, \
+                    self.tDraw(self.refImage, shape, tmpData, \
                                     "targetDrawL")
 
             if False:
@@ -1782,6 +1828,8 @@ os.system(rm + 'ref.png')
 os.system(rm + 'refDraw*.png')
 os.system(rm + 'targetDraw*.png')
 os.system(rm + 'plot*.png')
+os.system(rm + 'dirErr*.png')
+os.system(rm + 'err*.png')
 
 meter = Meter()
 meter.setup()
