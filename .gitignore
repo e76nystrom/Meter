@@ -4,6 +4,7 @@
 *.dat
 *.pyproj
 *.sln
+*.tmp
 __pycache__
 capture
 *text
@@ -12,3 +13,5 @@ build
 tmp*
 #*
 *#
+.idea/
+cmeter/
