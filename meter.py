@@ -10,6 +10,7 @@ from time import sleep
 from platform import system
 
 import urllib.request
+import socket
 import io
 from datetime import datetime
 from pytz import timezone
@@ -22,6 +23,8 @@ if LINUX:
     R_PI = os.uname().machine.startswith('arm')
 
 URL = "http://192.168.42.70/capture"
+
+socket.setdefaulttimeout(2)
 
 if LINUX:
     print("Linux")
@@ -1338,6 +1341,7 @@ class Meter():
         self.dirError += 1
         print("dirError %3d " % (self.dirError), end='')
         print(name)
+        sys.stdout.flush()
 
     def openTarget(self, targetFile, lcdShape):
         self.targetImage = Image.open(targetFile)
@@ -1605,6 +1609,7 @@ class Meter():
                     break
                 except IncompleteRead:
                     print("IncompleteRead retry %d" % (retry))
+                    sys.stdout.flush()
                     retry -= 1
                     if retry <= 0:
                         sys.exit()
@@ -1615,7 +1620,7 @@ class Meter():
             if LINUX:
                 dirError = cm.loopProcess(targetArray.ravel())
                 if dirError != 0:
-                    if self.dirError < 100:
+                    if self.draw and (self.dirError < 100):
                         dirErrCount += 1
                         if dirErrCount == 1:
                             self.saveDirError(self.targetImage, lcdShape, digitData)

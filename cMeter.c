@@ -1165,6 +1165,7 @@ int updateDirection(int dirIndex, int *dirError)
     }
    }
    printf("*+dirIndex %d\n", dirIndex);
+   fflush(stdout);
    *dirError = 1;
    return dirIndex;
   }
