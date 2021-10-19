@@ -1614,6 +1614,13 @@ class Meter():
                     if retry <= 0:
                         sys.exit()
                     sleep(.25)
+                except socket.timeout:
+                    print("socket.timeout retry %d" % (retry))
+                    sys.stdout.flush()
+                    retry -= 1
+                    if retry <= 0:
+                        sys.exit()
+                    sleep(.25)
                     
             targetArray = self.openTarget(self.targetFile, lcdShape)
 
