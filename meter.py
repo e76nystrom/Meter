@@ -15,6 +15,8 @@ import io
 from datetime import datetime
 from pytz import timezone
 from http.client import IncompleteRead
+from urllib.error import URLError
+
 # from collections import namedtuple
 
 LINUX = system() == 'Linux'
@@ -1608,14 +1610,21 @@ class Meter():
                     self.targetFile = io.BytesIO(contents)
                     break
                 except IncompleteRead:
-                    print("IncompleteRead retry %d" % (retry))
+                    print("**!IncompleteRead retry %d" % (retry))
                     sys.stdout.flush()
                     retry -= 1
                     if retry <= 0:
                         sys.exit()
                     sleep(.25)
                 except socket.timeout:
-                    print("socket.timeout retry %d" % (retry))
+                    print("**!socket.timeout retry %d" % (retry))
+                    sys.stdout.flush()
+                    retry -= 1
+                    if retry <= 0:
+                        sys.exit()
+                    sleep(.25)
+                except URLError:
+                    print("**!URLError retry %d" % (retry))
                     sys.stdout.flush()
                     retry -= 1
                     if retry <= 0:
