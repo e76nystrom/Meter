@@ -1603,33 +1603,33 @@ class Meter():
             cm.cvar.updateEna = int(self.update)
 
         while True:
-            retry = 3
+            retry = 100
             while True:
                 try:
-                    contents = urllib.request.urlopen(URL).read()
+                    contents = urllib.request.urlopen(URL, data=None, timeout=5).read()
                     self.targetFile = io.BytesIO(contents)
                     break
                 except IncompleteRead:
-                    print("**!IncompleteRead retry %d" % (retry))
+                    print("**%s!IncompleteRead retry %d" % (timeStr(), retry))
                     sys.stdout.flush()
                     retry -= 1
                     if retry <= 0:
                         sys.exit()
-                    sleep(.25)
+                    sleep(10)
                 except socket.timeout:
-                    print("**!socket.timeout retry %d" % (retry))
+                    print("**%s!socket.timeout retry %d" % (timeStr(), retry))
                     sys.stdout.flush()
                     retry -= 1
                     if retry <= 0:
                         sys.exit()
-                    sleep(.25)
+                    sleep(10)
                 except URLError:
-                    print("**!URLError retry %d" % (retry))
+                    print("**%s!URLError retry %d" % (timeStr(), retry))
                     sys.stdout.flush()
                     retry -= 1
                     if retry <= 0:
                         sys.exit()
-                    sleep(.25)
+                    sleep(10)
                     
             targetArray = self.openTarget(self.targetFile, lcdShape)
 
