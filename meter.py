@@ -49,6 +49,7 @@ SEG_COL_THRESHOLD = 30
 SEG_ROW_THRESHOLD = 60
 DIGIT_THRESHOLD = 90
 SUM_THRESHOLD = 90
+DELTA_OFS = 5
 
 TARGET_COLUMN_RANGE = 0.05
 TARGET_ROW_RANGE = 0.20
@@ -155,44 +156,47 @@ class LcdShape():
         if self.dbg:
             print("setTarg w %3d h %3d" % (self.tArrayW, self.tArrayH))
 
-    def setRows(self, top, bottom):
+    def setRows(self, top, bottom, prt=True):
         self.top = top
         self.bottom = bottom
-        if self.dbg:
+        if prt and self.dbg:
             print("setRows t %3d b %3d" % (self.top, self.bottom))
 
-    def setColumns(self, left, right):
+    def setColumns(self, left, right, prt=True):
         self.left = left
         self.right = right
-        if self.dbg:
+        if prt and self.dbg:
             print("setCols l %3d r %3d" % (self.left, self.right))
 
-    def setSize(self):
+    def setSize(self, prt=True):
         self.height = h = (self.bottom - self.top) + 1
         self.width = (self.right - self.left) + 1
         self.topRow = int(TOP_SEG * h)
         self.botRow = int(BOTTOM_SEG * h)
-        if self.dbg:
+        if prt and self.dbg:
             print("setSize w %3d h %3d tr %3d br %3d" % \
                   (self.width, self.height, self.topRow, self.botRow))
 
     def set(self, rows, cols):
+        print("lcdShape set")
+        self.print()
         (l, r) = rows
-        self.setRows(l, r)
+        self.setRows(l, r, False)
         (t, b) = cols
-        self.setColumns(t, b)
-        self.setSize()
+        self.setColumns(t, b, False)
+        self.setSize(False)
         self.print()
 
-    def get(self):
+    def cmGet(self):
         (self.top, self.bottom) = cm.getRows()
         (self.left, self.right) = cm.getColumns()
-        self.setSize()
+        (self.height, self.width, self.topRow, self.botRow) = cm.getSize()
 
     def print(self):
-        print("t %3d b %3d l %3d r %3d w %3d h %3d s %5d" % \
+        print("t %3d b %3d l %3d r %3d w %3d h %3d s %5d tr %3d br %3d" % \
               (self.top, self.bottom, self.left, self.right, \
-	       self.width, self.height, self.width * self.height))
+	       self.width, self.height, self.width * self.height, \
+               self.topRow, self.botRow))
 
 class DigitData():
     def __init__(self, strCol, endCol):
@@ -226,7 +230,7 @@ class DigitData():
         self.dirStart = dirStart
         self.dirEnd = dirEnd
 
-    def get(self, index):
+    def cmGet(self, index):
         for i in range(2):
             (strCol, endCol) = cm.getDigitCol(index, i)
             self.setCol(strCol, endCol, i)
@@ -251,7 +255,7 @@ class DigitData():
 
 def shapeCopy():
     shape = LcdShape()
-    shape.get()
+    shape.cmGet()
     return shape
 
 def digitDataCopy():
@@ -259,12 +263,12 @@ def digitDataCopy():
     for index in range(MAX_DIGITS):
         data = DigitData(0, 0)
         tmpData.append(data)
-        data.get(index)
+        data.cmGet(index)
     return tmpData
 
 class Meter():
     def __init__(self):
-        self.plot = [False for element in range(8 + 1)]
+        self.plot = [False for element in range(9 + 1)]
 
         self.save = False           # save figure
 
@@ -334,6 +338,8 @@ class Meter():
                         self.plot[7] = True # target center column
                     elif val == 8:
                         self.plot[8] = True # target bounds
+                    elif val == 9:
+                        self.plot[9] = True # target bounds
                 elif ch == 'd':
                     val = int(val[1:])
                     if val == 0:
@@ -411,7 +417,9 @@ class Meter():
                 plt.show()
             plt.close()
 
-    def vertical1(self, lcdShape):
+    def verticalBounds(self, lcdShape):
+        if self.dbg[1]:
+            print("verticalBounds")
         deltaArray = [0 for i in range(len(self.rowArray))]
         minVal = MAX_PIXEL
         minRow = 0
@@ -419,7 +427,7 @@ class Meter():
         maxRow = 0
         rowLen = len(self.rowArray)
         rowLast = 0
-        for row in range(5, rowLen):
+        for row in range(DELTA_OFS, rowLen):
             delta = self.rowArray[row] - self.rowArray[rowLast]
             deltaArray[row] = delta
             if delta < minVal:
@@ -434,30 +442,31 @@ class Meter():
 
         if self.plot[2]:
             fig, axs = plt.subplots(2, sharex=True)
+            fig.suptitle("Plot 2 verticalBounds")
             fig.set_figwidth(3 * fig.get_figwidth())
             fig.set_figheight(2 * fig.get_figheight())
+
             axis = axs[0]
             axis.plot(self.rowArray)
             y = self.rowArray[minRow]
             axis.plot((minRow, minRow), (y - 10, y + 50))
             y = self.rowArray[maxRow]
             axis.plot((maxRow, maxRow), (y - 10, y + 50))
-            axis.set_title("Row Array")
+            axis.set_title("Row Array Top %3d Bottom %3d" % (minRow, maxRow))
+
             axis = axs[1]
             axis.plot(deltaArray)
             axis.plot((minRow, minRow), (0, minVal))
             axis.plot((maxRow, maxRow), (0, maxVal))
             axis.set_title("Delta Array")
             if self.save:
-                fig.savefig("plot4.png")
+                fig.savefig("plot2.png")
             else:
                 plt.show()
             plt.close()
 
     # find upper and lower bound of LCD display
-    def verticalBounds(self, lcdShape):
-        self.vertical1(lcdShape)
-        return
+    def verticalBoundsx(self, lcdShape):
         if self.dbg[1]:
             print("verticalBounds threshold %3d" % (DELTA_THRESHOLD))
         negDelta = True
@@ -535,23 +544,23 @@ class Meter():
                 plt.show()
             plt.close()
 
-    def horizontal1(self, lcdShape):
+    def horizontalBounds(self, lcdShape):
         if self.plot[3]:
             fig, axs = plt.subplots(4, sharex=True)
-            fig.suptitle("Plot3 Horizontal Bounds")
-            fig.set_figwidth(3 * fig.get_figwidth())
+            fig.suptitle("Plot 3 horizontalBounds")
+            fig.set_figwidth(4 * fig.get_figwidth())
             fig.set_figheight(2 * fig.get_figheight())
             n = 0
 
         refMaxCol = len(self.refArray[0])
         refMidCol = refMaxCol // 2
-        for row in (lcdShape.top, lcdShape.bottom - 5):
+        for row in (lcdShape.top, lcdShape.bottom - DELTA_OFS):
             sumArray = [0 for i in range(refMaxCol)]
-            for r in range(row, row + 5):
+            for r in range(row, row + DELTA_OFS):
                 for col, pixel in enumerate(self.refArray[row]):
                     sumArray[col] += pixel
             for col in range(refMaxCol):
-                sumArray[col] //= 5
+                sumArray[col] //= DELTA_OFS
 
             deltaArray = [0 for i in range(refMaxCol)]
             minVal = MAX_PIXEL
@@ -559,7 +568,7 @@ class Meter():
             maxVal = -MAX_PIXEL
             maxCol = 0
             colLast = 0
-            for col in range(5, refMaxCol):
+            for col in range(DELTA_OFS, refMaxCol):
                 delta = sumArray[col] - sumArray[colLast]
                 deltaArray[col] = delta
                 if col < refMidCol:
@@ -574,16 +583,15 @@ class Meter():
 
             if self.plot[3]:
                 axs[n].plot(sumArray)
-                axs[n].set_title("Row %3d %3d -> %3d" % (row, minCol, maxCol))
+                axs[n].set_title("Row %3d Left %3d Right %3d" % (row, minCol, maxCol))
                 axs[n].plot((minCol, minCol), (0, MAX_PIXEL))
                 axs[n].plot((maxCol, maxCol), (0, MAX_PIXEL))
                 n += 1
                 axs[n].plot(deltaArray)
                 axs[n].plot((minCol, minCol), (0, minVal))
                 axs[n].plot((maxCol, maxCol), (0, maxVal))
-                n += 1
 
-            print("row %3d t %3d b %3d" % (row, minCol, maxCol))
+            print("row %3d l %3d r %3d" % (row, minCol, maxCol))
 
         lcdShape.setColumns(minCol, maxCol)
 
@@ -594,9 +602,7 @@ class Meter():
                 plt.show()
                 
     # find left and right bound of LCD display
-    def horizontalBounds(self, lcdShape):
-        self.horizontal1(lcdShape)
-        return
+    def horizontalBoundsx(self, lcdShape):
         left = 0
         right = 0
         if self.plot[3]:
@@ -673,42 +679,70 @@ class Meter():
                 plt.show()
         lcdShape.setColumns(left, right)
 
-    def drawPlot8(self, array, lcdShape, rows, cols):
+    def drawPlot8(self, array, lcdShape, ttl="8"):
         (cr, lc, rc, rr, tr, br) = self.tbVars(lcdShape)
 
         fig, axs = plt.subplots(3)
-        fig.suptitle("Plot8")
+        fig.suptitle("Plot" + ttl + " targetBounds")
         fig.set_figwidth(2 * fig.get_figwidth())
-        fig.set_figheight(2 * fig.get_figheight())
-        fig.suptitle("Target Bounds")
+        fig.set_figheight(3 * fig.get_figheight())
         
-        for i, r0 in enumerate(rows):
+        for i, r0 in enumerate((tr, br)):
             axs[i].plot(array[r0])
             axs[i].set_title("row %3d" % (r0))
 
         x = []
         y = []
-        (r0, r1) = rows
-        tRows = r1 - r0 + 1
+        (r0, r1) = (tr, br)
+        tRows = br - tr + 1
         for cs in (lc, rc):
             for col in range(cs - cr, cs + cr):
                 cSum = 0
-                for row in range(r0, r1):
+                for row in range(tr, br):
                     cSum += int(array[row][col])
                 cSum //= tRows
                 x.append(col)
                 y.append(cSum)
 
         axs[2].plot(x, y)
-        x = []
-        y = []
-        (c0, c1) = cols
-        axs[2].plot((c0, c0), (0, MAX_PIXEL))
-        axs[2].plot((c1, c1), (0, MAX_PIXEL))
-        axs[2].set_title("Column Sums %3d %3d" % (c0, c1))
+        axs[2].set_title("Column Sums %3d %3d" % (lc, rc))
+        axs[2].plot((lc, lc), (0, MAX_PIXEL))
+        axs[2].plot((rc, rc), (0, MAX_PIXEL))
                 
         if self.save:
-            fig.savefig("plot8.png")
+            fig.savefig("plot" + ttl + ".png")
+        else:
+            plt.show()
+
+    def drawPlot9(self, array, lcdShape, temps, ttl="9"):
+        print("plot%s" % (ttl))
+        (cr, lc, rc, rr, tr, br) = self.tbVars(lcdShape)
+
+        fig, axs = plt.subplots(2, 4)
+        fig.suptitle("Plot" + ttl + " targetBounds")
+        fig.set_figwidth(4 * fig.get_figwidth())
+        fig.set_figheight(3 * fig.get_figheight())
+        
+        for i, row in ((0, tr), (1, br)):
+            (rowArray, sumArray, deltaArray) = temps[i]
+            a = axs[0][i]
+            a.set_title("Row %3d" % (row))
+            a.plot(rowArray, sumArray)
+            a.plot((row, row), (0, MAX_PIXEL))
+
+            axs[1][i].plot(rowArray, deltaArray)
+
+        for i, col in ((2, lc), (3, rc)):
+            (colArray, sumArray, deltaArray) = temps[i]
+            a = axs[0][i]
+            a.set_title("Col %3d" % (col))
+            a.plot(colArray, sumArray)
+            a.plot((col, col), (0, MAX_PIXEL))
+            
+            axs[1][i].plot(colArray, deltaArray)
+                
+        if self.save:
+            fig.savefig("plot" + ttl + ".png")
         else:
             plt.show()
 
@@ -741,66 +775,108 @@ class Meter():
         br = lcdShape.bottom
         return (cr, lc, rc, rr, tr, br)
 
-    def targetBounds(self, array, lcdShape):
+    def targetBounds(self, array, lcdShape, upd=True):
         (cr, lc, rc, rr, tr, br) = self.tbVars(lcdShape)
-        # array = np.asarray(self.targetGray)
 
         if self.dbg[0]:
             print("\nmeter targetBounds w %3d" % (lcdShape.tArrayW))
             print("t %3d b %3d l %3d r %3d rr %3d cr %3d threshold %3d" % \
                   (tr, br, lc, rc, rr, cr, SUM_THRESHOLD))
 
-        rows = []
+        rows = [0, 0]
+        temps = []
+        top = True
+        strVal = MAX_PIXEL
+        endVal = MAX_PIXEL
         for r in (tr, br):
             if self.dbg[2]:
                 print()
-            minSum = MAX_PIXEL
-            for row in range(r - rr, r + rr):
+            sumArray = [0 for i in range(2 * rr + DELTA_OFS)]
+            deltaArray = [0 for i in range(2 * rr + DELTA_OFS)]
+            rowArray = [0 for i in range(2 * rr + DELTA_OFS)]
+            i = 0
+            for row in range(r - rr - DELTA_OFS, r + rr):
                 rSum = 0
                 for col in range(lc - cr, rc + cr):
                     rSum += array[row][col]
-                rSum = int(rSum / (rc - lc + 2 * cr))
-                if rSum < minSum:
-                    minSum = rSum
-                    r0 = row
-                if self.dbg[2]:
-                    print("row %3d rSum %3d minSum %3d" % (row, rSum, minSum))
-            rows.append(r0)
+                sumArray[i] = int(rSum / (rc - lc + 2 * cr))
+                rowArray[i] = row
+                i += 1
+                
+            i = DELTA_OFS
+            for row in range(r - rr, r + rr):
+                delta = sumArray[i] - sumArray[i - DELTA_OFS]
+                deltaArray[i] = delta
+                if top:
+                    if delta < strVal:
+                        strVal = delta
+                        rows[0] = row
+                        if self.dbg[2]:
+                            print("<%2d row %3d sum %3d delta %3d" % \
+                                  (i, row, sumArray[i], delta))
+                else:
+                    if delta < endVal:
+                        endVal = delta
+                        rows[1] = row - DELTA_OFS
+                        if self.dbg[2]:
+                            print(">%2d row %3d sum %3d delta %3d" % \
+                                  (i, row, sumArray[i], delta))
+                i += 1
+            temps.append((rowArray, sumArray, deltaArray))
+            top = False
+
+        cols = [0, 0]
+        left = True
+        strVal = MAX_PIXEL
+        endVal = -MAX_PIXEL
+        for c in (lc, rc):
             if self.dbg[2]:
                 print()
-
-        cols = []
-        (r0, r1) = rows
-        tRows = r1 - r0 + 1
-        for cs in (lc, rc):
-            findNeg = True
-            lastSum = MAX_PIXEL
-            if self.dbg[0]:
-                print("col %3d -> %3d" % (cs - cr, cs + cr))
-            for col in range(cs - cr, cs + cr):
-                cSum = 0
-                for row in range(r0, r1):
-                    cSum += int(array[row][col])
-                cSum //= tRows
-                if self.dbg[0]:
-                    print("col %3d cSum %3d" % (col, cSum));
-                if findNeg:
-                    if (cSum <= SUM_THRESHOLD) and (lastSum >= SUM_THRESHOLD):
-                        c0 = col
-                        findNeg = False
+            sumArray = [0 for i in range(2 * cr + DELTA_OFS)]
+            deltaArray = [0 for i in range(2 * cr + DELTA_OFS)]
+            colArray = [0 for i in range(2 * cr + DELTA_OFS)]
+            i = 0
+            for col in range(c - cr - DELTA_OFS, c + cr):
+                rSum = 0
+                for row in range(rows[0], rows[1]):
+                    rSum += array[row][col]
+                sumArray[i] = int(rSum / (rows[1] - rows[0]))
+                colArray[i] = col
+                i += 1
+                
+            i = DELTA_OFS
+            for col in range(c - cr, c + cr):
+                delta = sumArray[i] - sumArray[i - DELTA_OFS]
+                deltaArray[i] = delta
+                if left:
+                    if delta < strVal:
+                        strVal = delta
+                        cols[0] = col
+                        if self.dbg[2]:
+                            print("<%2d col %3d sum %3d delta %3d" % \
+                                  (i, c, sumArray[i], delta))
                 else:
-                    if (cSum >= SUM_THRESHOLD) and (lastSum <= SUM_THRESHOLD):
-                        cols.append((col + c0) // 2)
-                        break
-                lastSum = cSum
-            if self.dbg[0]:
-                print()
+                    if delta > endVal:
+                        endVal = delta
+                        cols[1] = col - DELTA_OFS
+                        if self.dbg[2]:
+                            print(">%2d col %3d sum %3d delta %3d" % \
+                                  (i, c, sumArray[i], delta))
+                i += 1
+            temps.append((colArray, sumArray, deltaArray))
+            left = False
+
+        if upd:
+            lcdShape.set(rows, cols)
 
         if self.dbg[0]:
-            print("t %3d b %3d l %3d r %3d" % (r0, r1, cols[0], cols[1]))
+            print("t %3d b %3d l %3d r %3d" % (rows[0], rows[1], cols[0], cols[1]))
 
         if self.plot[8]:
-            self.drawPlot8(array, lcdShape, rows, cols)
+            self.drawPlot8(array, lcdShape)
+
+        if self.plot[9]:
+            self.drawPlot9(array, lcdShape, temps)
 
         if self.draw:
             self.tbDraw(self.targetGray, lcdShape, rows, cols)
@@ -836,7 +912,8 @@ class Meter():
         b = lcdShape.botRow + y0
 
         fig, axs = plt.subplots(2, sharex=True)
-        title = "Plot " + ttl + (" Linux" if LINUX else "")
+        title = "Plot"  + ttl + " findRefSegments Horizontal" + \
+            (" Linux" if LINUX else "")
         fig.suptitle(title)
         fig.set_figwidth(3 * fig.get_figwidth())
         fig.set_figheight(2 * fig.get_figheight())
@@ -893,7 +970,7 @@ class Meter():
         x0 = lcdShape.right
 
         fig, axs = plt.subplots(3, 2, sharex=True)
-        title = "Plot " + ttl + (" Linux" if LINUX else "")
+        title = "Plot" + ttl +  "findRefSegments Vertical" + (" Linux" if LINUX else "")
         fig.suptitle(title)
         axs = list(np.concatenate(axs).flat)
         fig.set_figheight(2 * fig.get_figheight())
@@ -911,6 +988,11 @@ class Meter():
             for segRow in data.segRows:
                 axs[n].plot([segRow, segRow], \
                             [0, DIGIT_THRESHOLD])
+
+            axs[n].plot([data.dirStart, data.dirStart],
+                        [DIGIT_THRESHOLD, MAX_PIXEL])
+            axs[n].plot([data.dirEnd, data.dirEnd],
+                        [DIGIT_THRESHOLD, MAX_PIXEL])
 
         if self.save:
             fig.savefig("plot" + ttl + ".png")
@@ -951,7 +1033,6 @@ class Meter():
             segColumn = seg[i]
             for j, col in enumerate(segColumn):
                 fill = fill1 if (j & 1) == 0 else fill0
-                print(j, col, fill)
                 d(((x0 - col, ms + y0), \
                    (x0 - col, me + y0)), fill=fill)
 
@@ -1000,9 +1081,9 @@ class Meter():
         refDraw.save(name + "2.png", "PNG")
 
     def rowScan(self, rowNum, lcdShape):
-        if self.dbg[0]:
-            print("rowScan %3d x0 %3d" % (rowNum, lcdShape.right))
         x0 = lcdShape.right
+        if self.dbg[0]:
+            print("rowScan %3d x0 %3d" % (rowNum, x0))
         negDelta = True
         segColumn = []
         row = self.refArray[rowNum]
@@ -1034,12 +1115,16 @@ class Meter():
         t = lcdShape.topRow + y0
         b = lcdShape.botRow + y0
 
+        if self.dbg[0]:
+            print("\npy findRefSegments w %3d x0 %3d y0 %3d\n" %\
+                  (lcdShape.width, x0 , y0))
+
         index = 0
         digitData = []
         seg = []
         for i, rowNum in enumerate((t, b)):
             if self.dbg[0]:
-                print("%d findRefSegments row %2d" % (i, rowNum))
+                print("%d row %3d" % (i, rowNum))
 
             segColumn = self.rowScan(rowNum, lcdShape)
 
@@ -1149,14 +1234,16 @@ class Meter():
                         break
 
                 dirEnd = lcdShape.height
-                lastPixel = MAX_PIXEL
-                for row in range(dirEnd, dirStart, -1):
-                    pixel = self.refArray[row + y0][x0 - centerCol]
-                    if (pixel >= DIGIT_THRESHOLD) and \
-                       (lastPixel <= DIGIT_THRESHOLD):
-                        dirEnd = row - 1
-                        break
-                    lastPixel = pixel
+                pixel = self.refArray[dirEnd + y0][x0 - centerCol]
+                if pixel < DIGIT_THRESHOLD:
+                    lastPixel = MAX_PIXEL
+                    for row in range(dirEnd, dirStart, -1):
+                        pixel = self.refArray[row + y0][x0 - centerCol]
+                        if (pixel >= DIGIT_THRESHOLD) and \
+                           (lastPixel <= DIGIT_THRESHOLD):
+                            dirEnd = row - 1
+                            break
+                        lastPixel = pixel
 
                 data.setDirRows(dirStart, dirEnd)
 
@@ -1428,7 +1515,7 @@ class Meter():
 
     def drawPlot6(self, array, lcdShape, digitData):
         fig, axs = plt.subplots(3, 2, sharex=True)
-        fig.suptitle("Plot6")
+        fig.suptitle("Plot6 readDisplay Progress")
         axs = list(np.concatenate(axs).flat)
         fig.set_figheight(2 * fig.get_figheight())
         fig.set_figwidth(2 * fig.get_figwidth())
@@ -1449,7 +1536,7 @@ class Meter():
 
     def drawPlot7(self, array, lcdShape, digitData):
         fig, axs = plt.subplots(3, 2, sharex=True)
-        fig.suptitle("Plot7")
+        fig.suptitle("Plot7 readDisplay Digits")
         axs = list(np.concatenate(axs).flat)
         fig.set_figheight(2 * fig.get_figheight())
         fig.set_figwidth(2 * fig.get_figwidth())
@@ -1684,6 +1771,21 @@ class Meter():
             sys.stdout.flush()
             sleep(.25)
 
+    def cmTBDraw(self, array, shape, lcdShape, ttl):
+        tImage = Image.fromarray(array)
+        rgbImage = Image.new("RGBA", tImage.size)
+        rgbImage.paste(tImage)
+        rgbDraw = ImageDraw.Draw(rgbImage)
+        l = rgbDraw.line
+        l(((shape.left,  shape.top),    (shape.right, shape.top), \
+           (shape.right, shape.bottom), (shape.left,  shape.bottom), \
+           (shape.left,  shape.top)),    fill=ImageColor.getrgb("yellow"))
+        l(((lcdShape.right + 50,  lcdShape.top), (lcdShape.right,  lcdShape.top), \
+           (lcdShape.right,  lcdShape.top - 50)), fill=ImageColor.getrgb("red"))
+        l(((lcdShape.left - 50,  lcdShape.bottom), (lcdShape.left,  lcdShape.bottom), \
+           (lcdShape.left,  lcdShape.bottom + 50)), fill=ImageColor.getrgb("blue"))
+        rgbImage.save(ttl + ".png")
+
     def process(self):
         if LINUX:
             cm.cvar.dbg0 = int(self.cDbg0)
@@ -1710,36 +1812,40 @@ class Meter():
                 tFile = io.BytesIO(contents)
                 tArray = self.openTarget(tFile, lcdShape)
             else:
+                self.targetGray = self.refGray
                 tArray = self.refArray
 
             print("call setup cm lcdShape")
             sys.stdout.flush()
+
             cm.setRef(self.refArray.ravel(), len(self.refArray[0]), \
                       len(self.refArray))
             cm.setSize(lcdShape.width, lcdShape.height)
             cm.setRows(lcdShape.top, lcdShape.bottom)
             cm.setColumns(lcdShape.left, lcdShape.right)
 
-            if True:
-                cm.cvar.updateEna = int(True)
-                print("call cm.targetBounds 1")
-                sys.stdout.flush()
-                cm.targetBounds(tArray.ravel(), len(tArray[0]), FALSE)
-                if self.dbg[0]:
-                    cm.printShape()
+            # if True:
+            #     cm.cvar.updateEna = int(True)
+            #     print("call cm.targetBounds 1")
+            #     sys.stdout.flush()
+            #     cm.targetBounds(tArray.ravel(), len(tArray[0]), FALSE)
+            #     if self.dbg[0]:
+            #         cm.printShape()
+            #         lcdShape.print()
 
-                    lcdShape.print()
-                lcdShape.set(cm.getRows(), cm.getColumns())
-                if self.dbg[0]:
-                    lcdShape.print()
-            cm.cvar.updateEna = int(self.update)
+            #     lcdShape.set(cm.getRows(), cm.getColumns())
+
+            #     if self.dbg[0]:
+            #         lcdShape.print()
+            # cm.cvar.updateEna = int(self.update)
         else:
             self.targetGray = self.refGray
             sys.stdout.flush()
-            print("call self.targetBounds 1")
-            (rows, cols) = self.targetBounds(self.refArray, lcdShape)
-            lcdShape.set(rows, cols)
 
+        print("call self.targetBounds 1")
+        self.targetBounds(self.refArray, lcdShape, False)
+
+        print("call self.findRefSegments 1")
         digitData = self.findRefSegments(lcdShape)
 
         if LINUX:
@@ -1748,28 +1854,40 @@ class Meter():
                 
                 cm.cvar.updateEna = 1
                 refArray = self.refArray
-                print("call cm.targetBounds 2")
+                print("call cm.targetBounds 1")
                 sys.stdout.flush()
                 cm.targetBounds(refArray.ravel(), len(refArray[0]), FALSE)
                 shape = LcdShape(refArray)
-                shape.get()
+                shape.cmGet()
+                if self.draw:
+                    self.cmTBDraw(refArray, shape, lcdShape, "tb1")
+                # cm.targetUpdate();
                 if self.dbg[0]:
                     shape.print()
 
+                print("call cm.findRefSegments 1")
                 cm.findRefSegments(refArray.ravel(), len(refArray[0]))
 
+                print
                 tmpData = []
+                print("compare digit data")
+                sys.stdout.flush()
                 for index in range(MAX_DIGITS):
                     data = DigitData(0, 0)
                     tmpData.append(data)
                     if self.dbg[0]:
                         cm.prtDigDat(index)
                         cm.prtDigDatC(index)
-                    data.get(index)
+                    data.cmGet(index)
                     if self.dbg[0]:
-                        print("%d " % (index), end="")
+                        print("cp %d " % (index), end="")
                         data.print()
                         data.printC()
+                        print("py %d " % (index), end="")
+                        digitData[index].print()
+                        digitData[index].printC()
+                        print()
+                        sys.stdout.flush()
 
                 seg = []
                 for index in range(2):
@@ -1777,6 +1895,33 @@ class Meter():
                     cm.getSegColumn(segColumns, index)
                     seg.append(list(segColumns))
                 
+                if self.plot[9]:
+                    print("plot9\n");
+                    temps = []
+                    size = 2 * int(shape.height * TARGET_ROW_RANGE) + \
+                        DELTA_OFS
+                    for index in range(2):
+                        sumArray = np.zeros(size, np.int32)
+                        deltaArray = np.zeros(size, np.int32)
+                        indexArray = np.zeros(size, np.int32)
+                        cm.getSumArray(sumArray, index);
+                        cm.getDeltaArray(deltaArray, index);
+                        cm.getIndexArray(indexArray, index);
+                        temps.append((indexArray, sumArray, deltaArray))
+
+                    size = 2 * int(shape.width * TARGET_COLUMN_RANGE) + \
+                        DELTA_OFS
+                    for index in range(2, 4):
+                        sumArray = np.zeros(size, np.int32)
+                        deltaArray = np.zeros(size, np.int32)
+                        indexArray = np.zeros(size, np.int32)
+                        cm.getSumArray(sumArray, index);
+                        cm.getDeltaArray(deltaArray, index);
+                        cm.getIndexArray(indexArray, index);
+                        temps.append((indexArray, sumArray, deltaArray))
+                        
+                    self.drawPlot9(refArray, shape, temps, "9a")
+
                 if self.plot[4]:
                     self.drawPlot4(refArray, shape, seg, tmpData, "4a")
 
@@ -1785,7 +1930,7 @@ class Meter():
 
                 if self.draw:
                     self.tDraw(self.refImage, shape, tmpData, \
-                                    "targetDrawL")
+                               "targetDrawL")
 
             if False:
                 cm.findRefSegments(self.refArray.ravel(), \
@@ -1814,14 +1959,18 @@ class Meter():
 
             targetArray = self.openTarget(self.targetFile, lcdShape)
             if LINUX:
-                print("call cm.targetBounds 3")
+                print("call cm.targetBounds 2")
                 sys.stdout.flush()
                 cm.targetBounds(targetArray.ravel(), len(targetArray[0]), FALSE)
                 cm.printShape();
+                if self.draw:
+                    shape = LcdShape(targetArray)
+                    shape.cmGet()
+                    self.cmTBDraw(targetArray, shape, lcdShape, "tb2")
 
             print("call self.targetBounds 2")
             sys.stdout.flush()
-            self.targetBounds(targetArray, lcdShape)
+            self.targetBounds(targetArray, lcdShape, False)
 
             if LINUX:
                 val = 0

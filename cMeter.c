@@ -75,6 +75,7 @@ extern int updateEna;
 #define DIGIT_COLUMNS 3
 #define MAX_DIGITS 6
 #define SEG_ROWS 6
+#define DELTA_OFS 5
 
 extern double TARGET_COLUMN_RANGE;
 extern double TARGET_ROW_RANGE;
@@ -83,6 +84,9 @@ extern int SUM_THRESHOLD;
 extern int DIGIT_THRESHOLD;
 
 #define MAX_PIXEL 255
+
+int targetRows[2];
+int targetCols[2];
 
 int segCol1[MAX_COL];
 int segCol2[MAX_COL];
@@ -276,7 +280,8 @@ void setSize(int width, int height)
  shape.topRow = (int) (TOP_SEG * height);
  shape.botRow = (int) (BOTTOM_SEG * height);
  if (dbg0)
-  printf("width %3d height %3d size %5d\n", width, height, width * height);
+  printf("setSize w %3d h %3d tr %3d br %3d\n",
+	 width, height, shape.topRow, shape.botRow);
 }
 
 void setRows(int top, int bottom)
@@ -285,7 +290,7 @@ void setRows(int top, int bottom)
  shape.bottom = bottom;
  if (dbg0)
  {
-  printf("setRows top %3d bottom %3d\n", shape.top, shape.bottom);
+  printf("setRows t %3d b %3d\n", shape.top, shape.bottom);
   fflush(stdout);
  }
 }
@@ -296,7 +301,7 @@ void setColumns(int left, int right)
  shape.right = right;
  if (dbg0)
  {
-  printf("setColumns left %3d right %3d\n", shape.left, shape.right);
+  printf("setColumns l %3d r %3d\n", shape.left, shape.right);
   fflush(stdout);
  }
 }
@@ -307,6 +312,49 @@ void updateSize()
  shape.width = (shape.right - shape.left) + 1;
  shape.topRow = (int) (TOP_SEG * shape.height);
  shape.botRow = (int) (BOTTOM_SEG * shape.height);
+ if (dbg0)
+ {
+  printf("updSize w %3d h %3d tr %3d br %3d\n",
+	shape. width, shape.height, shape.topRow, shape.botRow);
+  fflush(stdout);
+ }
+}
+
+void targetUpdate()
+{
+ setRows(targetRows[0], targetRows[1]);
+ setColumns(targetCols[0], targetCols[1]);
+ updateSize();
+}
+
+void getRows(int *tVal, int *bVal)
+{
+ *tVal = shape.top;
+ *bVal = shape.bottom;
+}
+
+void getColumns(int *lVal, int *rVal)
+{
+ *lVal = shape.left;
+ *rVal = shape.right;
+}
+
+void getSize(int *hVal, int *wVal, int *tRowVal, int *bRowVal)
+{
+ *hVal = shape.height;
+ *wVal = shape.width;;
+ *tRowVal = shape.topRow;
+ *bRowVal = shape.botRow;;
+}
+  
+void printShape(void)
+{
+ printf("t %3d b %3d ", shape.top, shape.bottom);
+ printf("l %3d r %3d ", shape.left, shape.right);
+ printf("w %3d h %3d s %5d ",
+	shape.width, shape.height, shape.width * shape.height);
+ printf("tr %3d br %3d\n", shape.topRow, shape.botRow);
+ fflush(stdout);
 }
 
 bool updateRows(int top, int bottom, int upd)
@@ -429,26 +477,6 @@ bool updateColumns(int left, int right, int upd)
  return(rtn);
 }
 
-void getRows(int *tVal, int *bVal)
-{
- *tVal = shape.top;
- *bVal = shape.bottom;
-}
-
-void getColumns(int *lVal, int *rVal)
-{
- *lVal = shape.left;
- *rVal = shape.right;
-}
-
-void printShape(void)
-{
- printf("t %3d b %3d ", shape.top, shape.bottom);
- printf("l %3d r %3d ", shape.left, shape.right);
- printf("w %3d h %3d s %5d\n",
-	shape.width, shape.height, shape.width * shape.height);
-}
-  
 void setDigitCol(int strCol, int endCol, int index, int n)
 {
 // printf("strcol %3d endCol %3d\n", strCol, endCol);
@@ -519,11 +547,12 @@ void printDigitData(P_DIGIT_DATA data)
 	data->endCol[0], data->endCol[1],
 	data->segRows[0], data->segRows[1], data->segRows[2],
 	data->dirStart, data->dirEnd);
+ fflush(stdout);
 }
 
 void prtDigDat(int index)
 {
- printf("%d ", index);
+ printf("cm %d ", index);
  printDigitData(&digitData[index]);
 }
 
@@ -534,6 +563,7 @@ void printDigitDataC(P_DIGIT_DATA data)
 	data->colRange[0], data->colRange[1],
 	data->topRow, data->botRow, data->rowRange,
 	data->dirStart, data->dirEnd);
+ fflush(stdout);
 }
 
 void prtDigDatC(int index)
@@ -550,6 +580,7 @@ void printData(void)
  }
 }
 
+#if 0
 int targetBounds(uint8_t *array, int n, int w, int upd)
 {
  if (dbg0)
@@ -641,6 +672,11 @@ int targetBounds(uint8_t *array, int n, int w, int upd)
    printf("\n");
  }
 
+ targetRows[0] = rows[0];
+ targetRows[1] = rows[1];
+ targetCols[0] = cols[0];
+ targetCols[1] = cols[1];
+
  if (dbg0)
   printf("\nt %3d b %3d l %3d r %3d\n", rows[0], rows[1], cols[0], cols[1]);
 
@@ -651,6 +687,266 @@ int targetBounds(uint8_t *array, int n, int w, int upd)
   fflush(stdout);
  return(rtn);
 }
+#else
+
+#define SUM_SIZE (4 * 800)
+#define DELTA_SIZE (4 * 800)
+#define ROW_SIZE (4 * 800)
+
+int tbData[SUM_SIZE + DELTA_SIZE + ROW_SIZE];
+int tbIndex;
+
+int *tbAlloc(int size)
+{
+ int *rtnVal = &tbData[tbIndex];
+ tbIndex += size;
+// printf("tbAlloc size %3d index %3d %llx\n",
+//	size, tbIndex, (unsigned long long) rtnVal);
+ return(rtnVal);
+}
+
+typedef struct
+{
+ int *sumArray;
+ int *deltaArray;
+ int *indexArray;
+} T_TARGET_DATA, *P_TARGET_DATA;
+
+T_TARGET_DATA targetData[4];
+
+void dumpBuf(int *p, unsigned int len)
+{
+#define DUMP_COL 16
+ char col = 0;
+ for (unsigned int i = 0; i < len; i++)
+ {
+  if (col == 0)		/* if column 0 */
+  {
+   printf("%3d  ", i);
+  }
+  printf(" %4d", *p++);
+  col += 1;			/* count a column */
+  if (col == DUMP_COL)	/* if at end of line */
+  {
+   col = 0;			/* reset column counter */
+   printf("\n");
+  }
+ }
+ if (col != 0)
+  printf("\n");
+ fflush(stdout);
+}
+
+void getSumArray(int *sumArray, int n, int index)
+{
+ printf("getSumArray %d size %2d\n", index, n);
+ P_TARGET_DATA data = &targetData[index];
+ int *dst = sumArray;
+ int *src = data->sumArray;
+ for (int i = 0; i < n; i++)
+  *dst++ = *src++;
+ //dumpBuf(sumArray, n);
+}
+
+void getDeltaArray(int *deltaArray, int n, int index)
+{
+ printf("getDeltaArray %d size %2d\n", index, n);
+ P_TARGET_DATA data = &targetData[index];
+ int *dst = deltaArray;
+ int *src = data->deltaArray;
+ for (int i = 0; i < n; i++)
+  *dst++ = *src++;
+ //dumpBuf(deltaArray, n);
+}
+
+void getIndexArray(int *indexArray, int n, int index)
+{
+ printf("getIndexArray %d size %2d\n", index, n);
+ P_TARGET_DATA data = &targetData[index];
+ int *dst = indexArray;
+ int *src = data->indexArray;
+ for (int i = 0; i < n; i++)
+  *dst++ = *src++;
+ //dumpBuf(indexArray, n);
+}
+
+int targetBounds(uint8_t *array, int n, int w, int upd)
+{
+ if (dbg0)
+  printf("\ncMeter targetBounds w %3d\n", w);
+ int lc = shape.left;
+ int rc = shape.right;
+ int rr = (int) (shape.height * TARGET_ROW_RANGE);
+ int cr = (int) (shape.width * TARGET_COLUMN_RANGE);
+ memset((void *) tbData, 0, sizeof(tbData));
+ P_TARGET_DATA targetPtr = targetData;
+ tbIndex = 0;
+
+ if (dbg0)
+  printf("t %3d b %3d l %3d r %3d rr %3d cr %3d\n",
+	 shape.top, shape.bottom, lc, rc, rr, cr);
+
+ int rows[2] = {0, 0};
+ int vBounds[2] = {shape.top, shape.bottom};
+ bool top = true;
+ int strVal = MAX_PIXEL;
+ int endVal = -MAX_PIXEL;
+ for (int i = 0; i < 2; i++)
+ {
+  int r = vBounds[i];
+  int size = 2 * rr + DELTA_OFS;
+  if (dbg0)
+   printf("\ni %d r %3d min %3d max %3d size %2d\n",
+	  i, r, r - rr - DELTA_OFS, r + rr, size);
+
+  int *sumArray = (int *) tbAlloc(size);
+  int *deltaArray = (int *) tbAlloc(size);
+  int *indexArray = (int *) tbAlloc(size);
+  int i = 0;
+  for (int row = r - rr - DELTA_OFS; row < r + rr; row++)
+  {
+   int index = row * w;
+   int rSum = 0;
+
+   for (int k = index + lc - cr; k < index + rc + cr; k++)
+    rSum += array[k];
+
+   sumArray[i] = rSum / (rc - lc + 2 * cr);
+   indexArray[i] = row;
+   //printf("i %3d row %3d rSum %3d\n", i, row, sumArray[i]);
+   i += 1;
+  }
+  printf("i %3d\n", i);
+  
+  i = DELTA_OFS;
+  for (int row = r - rr; row < r + rr; row++)
+  {
+   int delta = sumArray[i] - sumArray[i - DELTA_OFS];
+   //printf("i %3d row %3d rSum %3d delta %4d\n", i, row, sumArray[i], delta);
+   deltaArray[i] = delta;
+   if (top)
+   {
+    if (delta < strVal)
+    {
+     strVal = delta;
+     rows[0] = row;
+     if (dbg0)
+      printf("<%2d row %3d sum %3d delta %4d\n", i, row, sumArray[i], delta);
+    }
+   }
+   else
+   {     
+    if (delta > endVal)
+    {
+     endVal = delta;
+     rows[1] = row - DELTA_OFS;
+     if (dbg0)
+      printf(">%2d row %3d sum %3d delta %4d\n", i, row, sumArray[i], delta);
+    }
+   }
+   i += 1;
+  }
+  top = false;
+
+  //dumpBuf(sumArray, size);
+  //dumpBuf(deltaArray, size);
+  //dumpBuf(indexArray, size);
+
+  targetPtr->sumArray = sumArray;
+  targetPtr->deltaArray = deltaArray;
+  targetPtr->indexArray = indexArray;
+  targetPtr += 1;
+ }
+
+ int cols[2] = {0, 0};
+ bool left = true;
+ strVal = MAX_PIXEL;
+ endVal = -MAX_PIXEL;
+
+ int tCol[2] = {shape.left, shape.right};
+ for (int i = 0; i < 2; i++)
+ {
+  int c = tCol[i];
+  if (dbg0)
+   printf("\ni %d c %3d\n", i, c);
+
+  int size = 2 * cr + DELTA_OFS;
+  //printf("size %d\n", size);
+  int *sumArray = (int *) tbAlloc(size);
+  int *deltaArray = (int *) tbAlloc(size);
+  int *indexArray = (int *) tbAlloc(size);
+  int i = 0;
+  for (int col = c - cr - DELTA_OFS; col < c + cr; col++)
+  {
+   int cSum = 0;
+   //printf("col %3d\n", col);
+   for (int row = rows[0]; row < rows[1]; row++)
+   {
+    cSum += array[row * w + col];
+    //printf("row %3d index %6d pixel %3d, cSum %6d\n",
+    //       row, row * w + col, array[row * w + col], cSum);
+   }
+   sumArray[i] = cSum / (rows[1] - rows[0]);
+   indexArray[i] = col;
+   i += 1; 
+  }
+
+  i = DELTA_OFS;
+  for (int col = c - cr; col < c + cr; col++)
+  {
+   int delta = sumArray[i] - sumArray[i - DELTA_OFS];
+   //printf("%2d col %3d sum %3d delta %4d\n", i, c, sumArray[i], delta);
+   deltaArray[i] = delta;
+   if (left)
+   {
+    if (delta < strVal)
+    {
+     strVal = delta;
+     cols[0] = col;
+     if (dbg0)
+      printf(">%2d col %3d sum %3d delta %4d\n", i, c, sumArray[i], delta);
+    }
+   }
+   else
+   {     
+    if (delta > endVal)
+    {
+     endVal = delta;
+     cols[1] = col - DELTA_OFS;
+     if (dbg0)
+      printf("<%2d col %3d sum %3d delta %4d\n", i, c, sumArray[i], delta);
+    }
+   }
+   i += 1;
+  }
+  left = false;
+
+  //dumpBuf(sumArray, size);
+  //dumpBuf(deltaArray, size);
+  //dumpBuf(indexArray, size);
+
+  targetPtr->sumArray = sumArray;
+  targetPtr->deltaArray = deltaArray;
+  targetPtr->indexArray = indexArray;
+  targetPtr += 1;
+ }
+ targetRows[0] = rows[0];
+ targetRows[1] = rows[1];
+ targetCols[0] = cols[0];
+ targetCols[1] = cols[1];
+
+ if (dbg0)
+  printf("\nt %3d b %3d l %3d r %3d\n", rows[0], rows[1], cols[0], cols[1]);
+
+ int rtn = updateRows(rows[0], rows[1], upd);
+ rtn |= updateColumns(cols[0], cols[1], upd);
+
+ if (dbg0)
+  fflush(stdout);
+ return(rtn);
+} 
+
+#endif
 
 //void rowScan(uint8_t *array, int row, int *segColumn; int maxCol)
 //{
@@ -674,20 +970,23 @@ void findRefSegments(uint8_t *array, int n, int w)
  int b = shape.botRow + y0;
 
  if (dbg0)
-  printf("\nfindRefSegments w %3d x0 %3d y0 %3d\n", w, x0 , y0);
+  printf("\nc findRefSegments w %3d x0 %3d y0 %3d\n", w, x0 , y0);
 
  int vBounds[2] = {t, b};
  for (int i = 0; i < 2; i++)
  {
+  int rowNum = vBounds[i];
   int *segColumn = seg[i];
   memset((void *) segColumn, 0, MAX_COL * sizeof(int));
   int *p = segColumn;
   bool findNeg = true;
   int colCount = 0;
-  int rowIndex = vBounds[i] * w + x0;
+  int rowIndex = rowNum * w + x0;
   int lastPixel = array[rowIndex - 2];
+
   if (dbg0)
-   printf("%d row %3d x0 %d\n", i, vBounds[i], x0);
+   printf("rowScan %d row %3d %3d\n", i, rowNum, x0);
+
   for (int col = 3; col < shape.width; col++)
   {
    int pixel = array[rowIndex - col];
@@ -761,8 +1060,18 @@ void findRefSegments(uint8_t *array, int n, int w)
     last = col;
    }
   }
+
   if (dbg0)
+  {
    printf("\n");
+   data = refDigitData;
+   for (int j = 0; j < MAX_DIGITS; j++)
+   {
+    printf("%d st %3d en %3d\n", j, data->strCol[i], data->endCol[i]);
+    data += 1;
+   }
+   printf("\n");
+  }
 
   if (i == 0)
   {
@@ -826,8 +1135,8 @@ void findRefSegments(uint8_t *array, int n, int w)
     {
      updateSegRows(data);
      
-     int dirStart = segRows[SEG_ROWS-1];
      int dirEnd = shape.height - 1;
+     int dirStart = segRows[SEG_ROWS-1];
      for (int row = dirStart; row <= dirEnd; row++)
      {
       int pixel = array[(row + y0) * w + centerCol];
@@ -838,17 +1147,22 @@ void findRefSegments(uint8_t *array, int n, int w)
       }
      }
 
-     lastPixel = MAX_PIXEL;
-     for (int row = dirEnd; row > dirStart; row--)
+     int pixel = array[(dirEnd + y0) * w + centerCol];
+     if (pixel < DIGIT_THRESHOLD)
      {
-      int pixel = array[(row + y0) * w + centerCol];
-      if (pixel >= DIGIT_THRESHOLD && lastPixel <= DIGIT_THRESHOLD)
+      lastPixel = MAX_PIXEL;
+      for (int row = dirEnd; row > dirStart; row--)
       {
-       dirEnd = row - 1;
-       break;
+       pixel = array[(row + y0) * w + centerCol];
+       if (pixel >= DIGIT_THRESHOLD && lastPixel <= DIGIT_THRESHOLD)
+       {
+	dirEnd = row - 1;
+	break;
+       }
+       lastPixel = pixel;
       }
-      lastPixel = pixel;
      }
+     
      data->dirStart = dirStart;
      data->dirEnd = dirEnd;
      if (dbg0)

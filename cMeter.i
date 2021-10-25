@@ -19,6 +19,10 @@
 %apply (int* INPLACE_ARRAY1, int DIM1) {(int* rSegRows, int n)};
 %apply (int* INPLACE_ARRAY1, int DIM1) {(int* segCol, int n)};
 
+%apply (int* INPLACE_ARRAY1, int DIM1) {(int* sumArray, int n)};
+%apply (int* INPLACE_ARRAY1, int DIM1) {(int* deltaArray, int n)};
+%apply (int* INPLACE_ARRAY1, int DIM1) {(int* indexArray, int n)};
+
 %apply int *OUTPUT {int *val};
 %apply int *OUTPUT {int *dirVal};
 %apply int *OUTPUT {int *dirIndex};
@@ -32,6 +36,10 @@
 %apply int *OUTPUT {int *rDirStart};
 %apply int *OUTPUT {int *rDirEnd};
 
+%apply int *OUTPUT {int *hVal};
+%apply int *OUTPUT {int *wVal};
+%apply int *OUTPUT {int *tRowVal};
+%apply int *OUTPUT {int *bRowVal};
 //%array_class(struct digitData, digitArray);
 
 %include "cMeter.h"

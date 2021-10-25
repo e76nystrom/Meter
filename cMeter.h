@@ -81,6 +81,7 @@ void setColumns(int left, int right);
 
 void getRows(int *tVal, int *bVal);
 void getColumns(int *lVal, int *rVal);
+void getSize(int *hVal, int *wVal, int *tRowVal, int *bRowVal);
 
 void printShape(void);
 
@@ -98,6 +99,7 @@ void prtDigDat(int index);
 void prtDigDatC(int index);
 void printData(void);
 
+void targetUpdate(void);
 int targetBounds(uint8_t *array, int n, int w, int upd);
 void findRefSegments(uint8_t *array, int n, int w);
 
@@ -109,3 +111,7 @@ int loopProcess(uint8_t *array, int n);
 double inplace(double *invec, int n);
 
 int arrayTest(uint8_t *array, int n, int w, int row, int col);
+
+void getSumArray(int *sumArray, int n, int index);
+void getDeltaArray(int *deltaArray, int n, int index);
+void getIndexArray(int *indexArray, int n, int index);

@@ -86,6 +86,9 @@ def getRows():
 def getColumns():
     return _cMeter.getColumns()
 
+def getSize():
+    return _cMeter.getSize()
+
 def printShape():
     return _cMeter.printShape()
 
@@ -119,6 +122,9 @@ def prtDigDatC(index):
 def printData():
     return _cMeter.printData()
 
+def targetUpdate():
+    return _cMeter.targetUpdate()
+
 def targetBounds(array, w, upd):
     return _cMeter.targetBounds(array, w, upd)
 
@@ -139,6 +145,15 @@ def inplace(invec):
 
 def arrayTest(array, w, row, col):
     return _cMeter.arrayTest(array, w, row, col)
+
+def getSumArray(sumArray, index):
+    return _cMeter.getSumArray(sumArray, index)
+
+def getDeltaArray(deltaArray, index):
+    return _cMeter.getDeltaArray(deltaArray, index)
+
+def getIndexArray(indexArray, index):
+    return _cMeter.getIndexArray(indexArray, index)
 
 cvar = _cMeter.cvar
 
