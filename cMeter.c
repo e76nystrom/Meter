@@ -816,7 +816,7 @@ int targetBounds(uint8_t *array, int n, int w, int upd)
    //printf("i %3d row %3d rSum %3d\n", i, row, sumArray[i]);
    i += 1;
   }
-  printf("i %3d\n", i);
+  //printf("i %3d\n", i);
   
   i = DELTA_OFS;
   for (int row = r - rr; row < r + rr; row++)
@@ -1128,8 +1128,6 @@ void findRefSegments(uint8_t *array, int n, int w)
      }
      lastPixel = pixel;
     }
-    if (dbg0)
-     printf("\n");
 
     if (segIndex == SEG_ROWS)
     {
@@ -1147,20 +1145,16 @@ void findRefSegments(uint8_t *array, int n, int w)
       }
      }
 
-     int pixel = array[(dirEnd + y0) * w + centerCol];
-     if (pixel < DIGIT_THRESHOLD)
+     lastPixel = MAX_PIXEL;
+     int end = dirEnd;
+     for (int row = dirStart; row < end; row++)
      {
-      lastPixel = MAX_PIXEL;
-      for (int row = dirEnd; row > dirStart; row--)
+      int pixel = array[(row + y0) * w + centerCol];
+      if (pixel <= DIGIT_THRESHOLD && lastPixel >= DIGIT_THRESHOLD)
       {
-       pixel = array[(row + y0) * w + centerCol];
-       if (pixel >= DIGIT_THRESHOLD && lastPixel <= DIGIT_THRESHOLD)
-       {
-	dirEnd = row - 1;
-	break;
-       }
-       lastPixel = pixel;
+       dirEnd = row - 1;
       }
+      lastPixel = pixel;
      }
      
      data->dirStart = dirStart;
@@ -1199,6 +1193,47 @@ void findRefSegments(uint8_t *array, int n, int w)
  }
  if (dbg0)
   fflush(stdout);
+}
+
+/*
+    #   --0--
+    #   |   |
+    #   5   1
+    #   |   |
+    #   --6--
+    #   |   |
+    #   4   2
+    #   |   |
+    #   --3--
+    #    6 5 4  3 2 1 0
+    # 0  0 1 1  1 1 1 1  0x3f
+    # 1  0 0 0  0 1 1 0  0x06
+    # 2  1 0 1  1 0 1 1  0x5b
+    # 3  1 0 0  1 1 1 1  0x4f
+    # 4  1 1 0  0 1 1 0  0x66
+    # 5  1 1 0  1 1 0 1  0x6d
+    # 6  1 1 1  1 1 0 1  0x7d
+    # 7  0 0 0  0 1 1 1  0x07
+    # 8  1 1 1  1 1 1 1  0x7f
+    # 9  1 1 0  0 1 1 1  0x67
+*/
+
+uint8_t segDecode[128];
+#define SEG_INV 0xff
+
+void decodeInit()
+{
+ memset((void *) segDecode, SEG_INV, sizeof(segDecode));
+ segDecode[0x3f] = 0;		/* 0  0 1 1  1 1 1 1  0x3f */
+ segDecode[0x06] = 1;		/* 1  0 0 0  0 1 1 0  0x06 */
+ segDecode[0x5b] = 2;		/* 2  1 0 1  1 0 1 1  0x5b */
+ segDecode[0x4f] = 3;		/* 3  1 0 0  1 1 1 1  0x4f */
+ segDecode[0x66] = 4;		/* 4  1 1 0  0 1 1 0  0x66 */
+ segDecode[0x6d] = 5;		/* 5  1 1 0  1 1 0 1  0x6d */
+ segDecode[0x7d] = 6;		/* 6  1 1 1  1 1 0 1  0x7d */
+ segDecode[0x07] = 7;		/* 7  0 0 0  0 1 1 1  0x07 */
+ segDecode[0x7f] = 8;		/* 8  1 1 1  1 1 1 1  0x7f */
+ segDecode[0x67] = 9;		/* 9  1 1 0  0 1 1 1  0x67 */
 }
 
 int decode(int result)
@@ -1267,7 +1302,14 @@ void testDecode(void)
  }
 }
 
-int readSegments(uint8_t *array, int n, int index)
+typedef struct
+{
+ uint8_t segVal;
+ uint8_t dirVal;
+} T_READ_RESULT;
+
+//int readSegments(uint8_t *array, int n, int index)
+T_READ_RESULT readSegments(uint8_t *array, int n, int index)
 {
  P_DIGIT_DATA data = &digitData[index];
  int x0 = shape.right;
@@ -1316,9 +1358,41 @@ int readSegments(uint8_t *array, int n, int index)
   if (array[brc + r0] < DIGIT_THRESHOLD)
    result |= 0x08;
  }
- return(result);
+// return(result);
+ 
+ T_READ_RESULT readResult;
+ readResult.segVal = result;
+
+ int startRow = data->dirStart + y0;
+ int endRow = data->dirEnd + y0;
+ bool skip = true;
+
+ int lastPixel = 0;
+ result = 0;
+ int row;
+ for (row = startRow; row < endRow; row++)
+ {
+  int pixel = array[row * w + colB];
+  if (skip)
+  {
+   if (pixel > DIGIT_THRESHOLD)
+    skip = false;
+  }
+  else
+  {
+   if ((lastPixel <= DIGIT_THRESHOLD) && (pixel >= DIGIT_THRESHOLD))
+   {
+    result = 1;
+    break;
+   }
+  }
+  lastPixel = pixel;
+ }
+ readResult.dirVal = result;
+ return(readResult);
 }
 
+/*
 int readDirection(uint8_t *array, int n, int index)
 {
  P_DIGIT_DATA data = &digitData[index];
@@ -1330,7 +1404,8 @@ int readDirection(uint8_t *array, int n, int index)
  bool skip = true;
  int lastPixel = 0;
  int result = 0;
- for (int row = startRow; row < endRow; row++)
+ int row;
+ for (row = startRow; row < endRow; row++)
  {
   int pixel = array[row * w + col];
   if (skip)
@@ -1348,8 +1423,12 @@ int readDirection(uint8_t *array, int n, int index)
   }
   lastPixel = pixel;
  }
+ //printf("%d col %3d row %2d result %d\n",
+ //       index, -(col - shape.right), row - t, result);
+ //fflush(stdout);
  return(result);
 }
+*/
 
 typedef struct
 {
@@ -1523,11 +1602,20 @@ void readDisplay(uint8_t *array, int n, int *val,
  int dirM = 1;
  for (int i = 0; i < 6; i++)
  {
-  int result = readSegments(array, n, i);
-  meterVal += meterMult * decode(result);
+#if 1
+  T_READ_RESULT readResult = readSegments(array, n, i);
+  int result = decode(readResult.segVal);
+  meterVal += meterMult * result;
+#else
+  T_READ_RESULT readResult = readSegments(array, n, i);
+  int result = segDecode[readResult.segVal];
+  if (result != SEG_INV)
+   meterVal += meterMult * result;
+#endif
   meterMult *= 10;
 
-  result = readDirection(array, n, i);
+//  result = readDirection(array, n, i);
+  result = readResult.dirVal;
   if (result != 0)
    dirV |= dirM;
   dirM <<= 1;

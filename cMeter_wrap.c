@@ -3753,6 +3753,58 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_getSize(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  int *arg1 = (int *) 0 ;
+  int *arg2 = (int *) 0 ;
+  int *arg3 = (int *) 0 ;
+  int *arg4 = (int *) 0 ;
+  int temp1 ;
+  int res1 = SWIG_TMPOBJ ;
+  int temp2 ;
+  int res2 = SWIG_TMPOBJ ;
+  int temp3 ;
+  int res3 = SWIG_TMPOBJ ;
+  int temp4 ;
+  int res4 = SWIG_TMPOBJ ;
+  
+  arg1 = &temp1;
+  arg2 = &temp2;
+  arg3 = &temp3;
+  arg4 = &temp4;
+  if (!SWIG_Python_UnpackTuple(args, "getSize", 0, 0, 0)) SWIG_fail;
+  getSize(arg1,arg2,arg3,arg4);
+  resultobj = SWIG_Py_Void();
+  if (SWIG_IsTmpObj(res1)) {
+    resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_From_int((*arg1)));
+  } else {
+    int new_flags = SWIG_IsNewObj(res1) ? (SWIG_POINTER_OWN |  0 ) :  0 ;
+    resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_NewPointerObj((void*)(arg1), SWIGTYPE_p_int, new_flags));
+  }
+  if (SWIG_IsTmpObj(res2)) {
+    resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_From_int((*arg2)));
+  } else {
+    int new_flags = SWIG_IsNewObj(res2) ? (SWIG_POINTER_OWN |  0 ) :  0 ;
+    resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_NewPointerObj((void*)(arg2), SWIGTYPE_p_int, new_flags));
+  }
+  if (SWIG_IsTmpObj(res3)) {
+    resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_From_int((*arg3)));
+  } else {
+    int new_flags = SWIG_IsNewObj(res3) ? (SWIG_POINTER_OWN |  0 ) :  0 ;
+    resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_NewPointerObj((void*)(arg3), SWIGTYPE_p_int, new_flags));
+  }
+  if (SWIG_IsTmpObj(res4)) {
+    resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_From_int((*arg4)));
+  } else {
+    int new_flags = SWIG_IsNewObj(res4) ? (SWIG_POINTER_OWN |  0 ) :  0 ;
+    resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_NewPointerObj((void*)(arg4), SWIGTYPE_p_int, new_flags));
+  }
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_printShape(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   
@@ -4125,6 +4177,18 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_targetUpdate(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  
+  if (!SWIG_Python_UnpackTuple(args, "targetUpdate", 0, 0, 0)) SWIG_fail;
+  targetUpdate();
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_targetBounds(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   uint8_t *arg1 = (uint8_t *) 0 ;
@@ -4237,6 +4301,18 @@ SWIGINTERN PyObject *_wrap_loopInit(PyObject *SWIGUNUSEDPARM(self), PyObject *ar
   
   if (!SWIG_Python_UnpackTuple(args, "loopInit", 0, 0, 0)) SWIG_fail;
   loopInit();
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_decodeInit(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  
+  if (!SWIG_Python_UnpackTuple(args, "decodeInit", 0, 0, 0)) SWIG_fail;
+  decodeInit();
   resultobj = SWIG_Py_Void();
   return resultobj;
 fail:
@@ -4468,6 +4544,105 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_getSumArray(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  int *arg1 = (int *) 0 ;
+  int arg2 ;
+  int arg3 ;
+  PyArrayObject *array1 = NULL ;
+  int i1 = 1 ;
+  int val3 ;
+  int ecode3 = 0 ;
+  PyObject *swig_obj[2] ;
+  
+  if (!SWIG_Python_UnpackTuple(args, "getSumArray", 2, 2, swig_obj)) SWIG_fail;
+  {
+    array1 = obj_to_array_no_conversion(swig_obj[0], NPY_INT);
+    if (!array1 || !require_dimensions(array1,1) || !require_contiguous(array1)
+      || !require_native(array1)) SWIG_fail;
+    arg1 = (int*) array_data(array1);
+    arg2 = 1;
+    for (i1=0; i1 < array_numdims(array1); ++i1) arg2 *= array_size(array1,i1);
+  }
+  ecode3 = SWIG_AsVal_int(swig_obj[1], &val3);
+  if (!SWIG_IsOK(ecode3)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "getSumArray" "', argument " "3"" of type '" "int""'");
+  } 
+  arg3 = (int)(val3);
+  getSumArray(arg1,arg2,arg3);
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_getDeltaArray(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  int *arg1 = (int *) 0 ;
+  int arg2 ;
+  int arg3 ;
+  PyArrayObject *array1 = NULL ;
+  int i1 = 1 ;
+  int val3 ;
+  int ecode3 = 0 ;
+  PyObject *swig_obj[2] ;
+  
+  if (!SWIG_Python_UnpackTuple(args, "getDeltaArray", 2, 2, swig_obj)) SWIG_fail;
+  {
+    array1 = obj_to_array_no_conversion(swig_obj[0], NPY_INT);
+    if (!array1 || !require_dimensions(array1,1) || !require_contiguous(array1)
+      || !require_native(array1)) SWIG_fail;
+    arg1 = (int*) array_data(array1);
+    arg2 = 1;
+    for (i1=0; i1 < array_numdims(array1); ++i1) arg2 *= array_size(array1,i1);
+  }
+  ecode3 = SWIG_AsVal_int(swig_obj[1], &val3);
+  if (!SWIG_IsOK(ecode3)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "getDeltaArray" "', argument " "3"" of type '" "int""'");
+  } 
+  arg3 = (int)(val3);
+  getDeltaArray(arg1,arg2,arg3);
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_getIndexArray(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  int *arg1 = (int *) 0 ;
+  int arg2 ;
+  int arg3 ;
+  PyArrayObject *array1 = NULL ;
+  int i1 = 1 ;
+  int val3 ;
+  int ecode3 = 0 ;
+  PyObject *swig_obj[2] ;
+  
+  if (!SWIG_Python_UnpackTuple(args, "getIndexArray", 2, 2, swig_obj)) SWIG_fail;
+  {
+    array1 = obj_to_array_no_conversion(swig_obj[0], NPY_INT);
+    if (!array1 || !require_dimensions(array1,1) || !require_contiguous(array1)
+      || !require_native(array1)) SWIG_fail;
+    arg1 = (int*) array_data(array1);
+    arg2 = 1;
+    for (i1=0; i1 < array_numdims(array1); ++i1) arg2 *= array_size(array1,i1);
+  }
+  ecode3 = SWIG_AsVal_int(swig_obj[1], &val3);
+  if (!SWIG_IsOK(ecode3)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "getIndexArray" "', argument " "3"" of type '" "int""'");
+  } 
+  arg3 = (int)(val3);
+  getIndexArray(arg1,arg2,arg3);
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 static PyMethodDef SwigMethods[] = {
 	 { "SWIG_PyInstanceMethod_New", SWIG_PyInstanceMethod_New, METH_O, NULL},
 	 { "piInit", _wrap_piInit, METH_NOARGS, NULL},
@@ -4478,6 +4653,7 @@ static PyMethodDef SwigMethods[] = {
 	 { "setColumns", _wrap_setColumns, METH_VARARGS, NULL},
 	 { "getRows", _wrap_getRows, METH_NOARGS, NULL},
 	 { "getColumns", _wrap_getColumns, METH_NOARGS, NULL},
+	 { "getSize", _wrap_getSize, METH_NOARGS, NULL},
 	 { "printShape", _wrap_printShape, METH_NOARGS, NULL},
 	 { "getSegColumn", _wrap_getSegColumn, METH_VARARGS, NULL},
 	 { "setDigitCol", _wrap_setDigitCol, METH_VARARGS, NULL},
@@ -4489,13 +4665,18 @@ static PyMethodDef SwigMethods[] = {
 	 { "prtDigDat", _wrap_prtDigDat, METH_O, NULL},
 	 { "prtDigDatC", _wrap_prtDigDatC, METH_O, NULL},
 	 { "printData", _wrap_printData, METH_NOARGS, NULL},
+	 { "targetUpdate", _wrap_targetUpdate, METH_NOARGS, NULL},
 	 { "targetBounds", _wrap_targetBounds, METH_VARARGS, NULL},
 	 { "findRefSegments", _wrap_findRefSegments, METH_VARARGS, NULL},
 	 { "loopInit", _wrap_loopInit, METH_NOARGS, NULL},
+	 { "decodeInit", _wrap_decodeInit, METH_NOARGS, NULL},
 	 { "readDisplay", _wrap_readDisplay, METH_O, NULL},
 	 { "loopProcess", _wrap_loopProcess, METH_O, NULL},
 	 { "inplace", _wrap_inplace, METH_O, NULL},
 	 { "arrayTest", _wrap_arrayTest, METH_VARARGS, NULL},
+	 { "getSumArray", _wrap_getSumArray, METH_VARARGS, NULL},
+	 { "getDeltaArray", _wrap_getDeltaArray, METH_VARARGS, NULL},
+	 { "getIndexArray", _wrap_getIndexArray, METH_VARARGS, NULL},
 	 { NULL, NULL, 0, NULL }
 };
 

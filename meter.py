@@ -31,6 +31,7 @@ socket.setdefaulttimeout(2)
 if LINUX:
     print("Linux")
     import cMeter as cm
+    cm.decodeInit()
 
 WHITE_FILL = 255
 BLACK_FILL = 0
@@ -719,7 +720,7 @@ class Meter():
         (cr, lc, rc, rr, tr, br) = self.tbVars(lcdShape)
 
         fig, axs = plt.subplots(2, 4)
-        fig.suptitle("Plot" + ttl + " targetBounds")
+        fig.suptitle("Plot " + ttl + " targetBounds")
         fig.set_figwidth(4 * fig.get_figwidth())
         fig.set_figheight(3 * fig.get_figheight())
         
@@ -730,7 +731,9 @@ class Meter():
             a.plot(rowArray, sumArray)
             a.plot((row, row), (0, MAX_PIXEL))
 
-            axs[1][i].plot(rowArray, deltaArray)
+            a = axs[1][i]
+            a.plot(rowArray, deltaArray)
+            a.plot((row, row), (-50, 50))
 
         for i, col in ((2, lc), (3, rc)):
             (colArray, sumArray, deltaArray) = temps[i]
@@ -739,7 +742,9 @@ class Meter():
             a.plot(colArray, sumArray)
             a.plot((col, col), (0, MAX_PIXEL))
             
-            axs[1][i].plot(colArray, deltaArray)
+            a = axs[1][i]
+            a.plot(colArray, deltaArray)
+            a.plot((col, col), (-50, 50))
                 
         if self.save:
             fig.savefig("plot" + ttl + ".png")
@@ -970,7 +975,7 @@ class Meter():
         x0 = lcdShape.right
 
         fig, axs = plt.subplots(3, 2, sharex=True)
-        title = "Plot" + ttl +  "findRefSegments Vertical" + (" Linux" if LINUX else "")
+        title = "Plot " + ttl +  " findRefSegments Vertical" + (" Linux" if LINUX else "")
         fig.suptitle(title)
         axs = list(np.concatenate(axs).flat)
         fig.set_figheight(2 * fig.get_figheight())
@@ -1227,23 +1232,32 @@ class Meter():
                 data.setSegRows(segRows)
 
                 dirStart = segRows[SEG_ROWS-1]
-                for row in range(dirStart, lcdShape.height):
+                dirEnd = lcdShape.height
+                for row in range(dirStart, dirEnd):
                     pixel = self.refArray[row + y0][x0 - centerCol]
                     if pixel > DIGIT_THRESHOLD:
                         dirStart = row
                         break
 
-                dirEnd = lcdShape.height
-                pixel = self.refArray[dirEnd + y0][x0 - centerCol]
-                if pixel < DIGIT_THRESHOLD:
-                    lastPixel = MAX_PIXEL
-                    for row in range(dirEnd, dirStart, -1):
-                        pixel = self.refArray[row + y0][x0 - centerCol]
-                        if (pixel >= DIGIT_THRESHOLD) and \
-                           (lastPixel <= DIGIT_THRESHOLD):
-                            dirEnd = row - 1
-                            break
-                        lastPixel = pixel
+                # dirEnd = lcdShape.height
+                # pixel = self.refArray[dirEnd + y0][x0 - centerCol]
+                # if pixel < DIGIT_THRESHOLD:
+                #     lastPixel = MAX_PIXEL
+                #     for row in range(dirEnd, dirStart, -1):
+                #         pixel = self.refArray[row + y0][x0 - centerCol]
+                #         if (pixel >= DIGIT_THRESHOLD) and \
+                #            (lastPixel <= DIGIT_THRESHOLD):
+                #             dirEnd = row - 1
+                #             break
+                #         lastPixel = pixel
+
+                lastPixel = MAX_PIXEL
+                for row in range(dirStart, dirEnd):
+                    pixel = self.refArray[row + y0][x0 - centerCol]
+                    if (pixel <= DIGIT_THRESHOLD) and \
+                       (lastPixel >= DIGIT_THRESHOLD):
+                        dirEnd = row - 1
+                    lastPixel = pixel
 
                 data.setDirRows(dirStart, dirEnd)
 
@@ -1515,7 +1529,7 @@ class Meter():
 
     def drawPlot6(self, array, lcdShape, digitData):
         fig, axs = plt.subplots(3, 2, sharex=True)
-        fig.suptitle("Plot6 readDisplay Progress")
+        fig.suptitle("Plot 6 readDisplay Progress")
         axs = list(np.concatenate(axs).flat)
         fig.set_figheight(2 * fig.get_figheight())
         fig.set_figwidth(2 * fig.get_figwidth())
@@ -1536,7 +1550,7 @@ class Meter():
 
     def drawPlot7(self, array, lcdShape, digitData):
         fig, axs = plt.subplots(3, 2, sharex=True)
-        fig.suptitle("Plot7 readDisplay Digits")
+        fig.suptitle("Plot 7 readDisplay Digits")
         axs = list(np.concatenate(axs).flat)
         fig.set_figheight(2 * fig.get_figheight())
         fig.set_figwidth(2 * fig.get_figwidth())
@@ -1786,6 +1800,32 @@ class Meter():
            (lcdShape.left,  lcdShape.bottom + 50)), fill=ImageColor.getrgb("blue"))
         rgbImage.save(ttl + ".png")
 
+    def cmPlot9(self, array, shape, ttl):
+        temps = []
+        size = 2 * int(shape.height * TARGET_ROW_RANGE) + \
+            DELTA_OFS
+        for index in range(2):
+            sumArray = np.zeros(size, np.int32)
+            deltaArray = np.zeros(size, np.int32)
+            indexArray = np.zeros(size, np.int32)
+            cm.getSumArray(sumArray, index);
+            cm.getDeltaArray(deltaArray, index);
+            cm.getIndexArray(indexArray, index);
+            temps.append((indexArray, sumArray, deltaArray))
+
+        size = 2 * int(shape.width * TARGET_COLUMN_RANGE) + \
+            DELTA_OFS
+        for index in range(2, 4):
+            sumArray = np.zeros(size, np.int32)
+            deltaArray = np.zeros(size, np.int32)
+            indexArray = np.zeros(size, np.int32)
+            cm.getSumArray(sumArray, index);
+            cm.getDeltaArray(deltaArray, index);
+            cm.getIndexArray(indexArray, index);
+            temps.append((indexArray, sumArray, deltaArray))
+
+        self.drawPlot9(array, shape, temps, ttl)
+
     def process(self):
         if LINUX:
             cm.cvar.dbg0 = int(self.cDbg0)
@@ -1861,14 +1901,13 @@ class Meter():
                 shape.cmGet()
                 if self.draw:
                     self.cmTBDraw(refArray, shape, lcdShape, "tb1")
-                # cm.targetUpdate();
+                cm.targetUpdate();
                 if self.dbg[0]:
                     shape.print()
 
                 print("call cm.findRefSegments 1")
                 cm.findRefSegments(refArray.ravel(), len(refArray[0]))
 
-                print
                 tmpData = []
                 print("compare digit data")
                 sys.stdout.flush()
@@ -1879,6 +1918,7 @@ class Meter():
                         cm.prtDigDat(index)
                         cm.prtDigDatC(index)
                     data.cmGet(index)
+
                     if self.dbg[0]:
                         print("cp %d " % (index), end="")
                         data.print()
@@ -1888,49 +1928,23 @@ class Meter():
                         digitData[index].printC()
                         print()
                         sys.stdout.flush()
-
-                seg = []
-                for index in range(2):
-                    segColumns = np.empty(MAX_COL, np.int32)
-                    cm.getSegColumn(segColumns, index)
-                    seg.append(list(segColumns))
                 
                 if self.plot[9]:
-                    print("plot9\n");
-                    temps = []
-                    size = 2 * int(shape.height * TARGET_ROW_RANGE) + \
-                        DELTA_OFS
-                    for index in range(2):
-                        sumArray = np.zeros(size, np.int32)
-                        deltaArray = np.zeros(size, np.int32)
-                        indexArray = np.zeros(size, np.int32)
-                        cm.getSumArray(sumArray, index);
-                        cm.getDeltaArray(deltaArray, index);
-                        cm.getIndexArray(indexArray, index);
-                        temps.append((indexArray, sumArray, deltaArray))
-
-                    size = 2 * int(shape.width * TARGET_COLUMN_RANGE) + \
-                        DELTA_OFS
-                    for index in range(2, 4):
-                        sumArray = np.zeros(size, np.int32)
-                        deltaArray = np.zeros(size, np.int32)
-                        indexArray = np.zeros(size, np.int32)
-                        cm.getSumArray(sumArray, index);
-                        cm.getDeltaArray(deltaArray, index);
-                        cm.getIndexArray(indexArray, index);
-                        temps.append((indexArray, sumArray, deltaArray))
-                        
-                    self.drawPlot9(refArray, shape, temps, "9a")
+                    self.cmPlot9(refArray, shape, "9a")
 
                 if self.plot[4]:
+                    seg = []
+                    for index in range(2):
+                        segColumns = np.empty(MAX_COL, np.int32)
+                        cm.getSegColumn(segColumns, index)
+                        seg.append(list(segColumns))
                     self.drawPlot4(refArray, shape, seg, tmpData, "4a")
 
                 if self.plot[5]:
                     self.drawPlot5(refArray, shape, tmpData, "5a")
 
                 if self.draw:
-                    self.tDraw(self.refImage, shape, tmpData, \
-                               "targetDrawL")
+                    self.tDraw(self.refImage, shape, tmpData, "targetDrawL")
 
             if False:
                 cm.findRefSegments(self.refArray.ravel(), \
@@ -1977,8 +1991,8 @@ class Meter():
                 dirVal = 0
                 dirIndex = 0
                 print("w %3d" % (len(targetArray[0])))
-                (val, dirVal, dirIndex) = cm.readDisplay(targetArray.ravel())
-                print("%6d 0x%02x %d" % (val, dirVal, dirIndex))
+                (val, dirIndex, dirVal) = cm.readDisplay(targetArray.ravel())
+                print("cm %6d 0x%02x %d" % (val, dirVal, dirIndex))
                 if self.draw:
                     cm.printShape()
                     cm.printData()
@@ -1988,7 +2002,7 @@ class Meter():
             if True:
                 (val, (dirVal, dirIndex)) = \
                     self.readDisplay(targetArray, lcdShape, digitData)
-            print("%6d 0x%02x %d" % (val, dirVal, dirIndex))
+            print("py %6d 0x%02x %d" % (val, dirVal, dirIndex))
 
         # for val in vars(self).keys():
         #     print(val)

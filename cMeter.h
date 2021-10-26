@@ -105,6 +105,7 @@ void findRefSegments(uint8_t *array, int n, int w);
 
 void loopInit(void);
 
+void decodeInit();
 void readDisplay(uint8_t *array, int n, int *val, int *dirIndex, int *dirVal);
 int loopProcess(uint8_t *array, int n);
 

@@ -134,6 +134,9 @@ def findRefSegments(array, w):
 def loopInit():
     return _cMeter.loopInit()
 
+def decodeInit():
+    return _cMeter.decodeInit()
+
 def readDisplay(array):
     return _cMeter.readDisplay(array)
 
