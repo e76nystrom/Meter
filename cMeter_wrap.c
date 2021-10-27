@@ -4447,6 +4447,19 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_drawTarget(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  int result;
+  
+  if (!SWIG_Python_UnpackTuple(args, "drawTarget", 0, 0, 0)) SWIG_fail;
+  result = (int)drawTarget();
+  resultobj = SWIG_From_int((int)(result));
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_inplace(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   double *arg1 = (double *) 0 ;
@@ -4685,6 +4698,7 @@ static PyMethodDef SwigMethods[] = {
 	 { "loopInit", _wrap_loopInit, METH_NOARGS, NULL},
 	 { "loopSync", _wrap_loopSync, METH_NOARGS, NULL},
 	 { "loopProcess", _wrap_loopProcess, METH_O, NULL},
+	 { "drawTarget", _wrap_drawTarget, METH_NOARGS, NULL},
 	 { "inplace", _wrap_inplace, METH_O, NULL},
 	 { "arrayTest", _wrap_arrayTest, METH_VARARGS, NULL},
 	 { "getSumArray", _wrap_getSumArray, METH_VARARGS, NULL},

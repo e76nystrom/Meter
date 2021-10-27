@@ -32,6 +32,12 @@ if LINUX:
     print("Linux")
     import cMeter as cm
     cm.decodeInit()
+# else:
+#     sys.path.append("C:\\Development\\Python\\Meter\\x64\\Release\\")
+#     print('\n'.join(sys.path))
+#     import cMeter as cm
+#     cm.decodeInit()
+#     LINUX = True
 
 WHITE_FILL = 255
 BLACK_FILL = 0
@@ -1709,6 +1715,9 @@ class Meter():
                             self.saveDirError(targetArray, lcdShape, digitData)
                 else:
                     dirErrCount = 0
+
+                if cm.drawTarget():
+                    self.tDraw(targetArray, lcdShape, digitData, name="tErr-" + timeStr())
                     
                 sleep(.25)
                 continue

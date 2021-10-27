@@ -85,6 +85,8 @@ extern int DIGIT_THRESHOLD;
 
 #define MAX_PIXEL 255
 
+int drawTargetFlag;
+
 int targetRows[2];
 int targetCols[2];
 
@@ -251,10 +253,19 @@ const char *month[] =
 
 char *timeStr(char *buf, int len)
 {
+#if defined(__GNUC__)
  time_t now;
  time(&now);
  struct tm local;
  localtime_r(&now, &local);
+#endif
+
+#if defined(_WIN64)
+ __time64_t now;
+ struct tm local;
+ _time64(&now);
+ _localtime64_s(&local, &now);
+#endif
 
  snprintf(buf, len, "%3s_%02d_%4d_%02d-%02d-%02d",
 	  month[local.tm_mon], local.tm_mday, local.tm_year + 1900,
@@ -1481,6 +1492,7 @@ void updateReading(int val)
   {
    int meter = m.meterVal[nxtCtr];
    int delta = meter == 0 ? 0 : val - meter;
+   drawTargetFlag = (abs(delta) > 1);
    char buf[24];
    printf("%s %d v %6d m %6d d %2d n %5d r %5d f %5d\n",
 	  timeStr(buf, sizeof(buf)), nxtCtr, val, meter, delta,
@@ -1626,6 +1638,11 @@ void loopSync(void)
  m.sync = false;
  m.lastVal = -1;
  m.lastTmp = -1;
+}
+
+int drawTarget(void)
+{
+ return(drawTargetFlag);
 }
 
 int loopProcess(uint8_t *array, int n)

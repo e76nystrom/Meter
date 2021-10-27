@@ -146,6 +146,9 @@ def loopSync():
 def loopProcess(array):
     return _cMeter.loopProcess(array)
 
+def drawTarget():
+    return _cMeter.drawTarget()
+
 def inplace(invec):
     return _cMeter.inplace(invec)
 
