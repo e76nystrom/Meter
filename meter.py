@@ -287,11 +287,11 @@ class Meter():
         self.refFile = None
         self.targetFile = None
 
-        self.refGray = None
+        # self.refGray = None
         self.refArray = None
         self.rowArray = None
         self.targetImage = None
-        self.targetGray = None
+        # self.targetGray = None
 
         self.initLoopVars()
 
@@ -395,9 +395,9 @@ class Meter():
 
     def openRef(self):
         self.refImage = Image.open(self.refFile)
-        self.refGray = ImageOps.grayscale(self.refImage)
+        refGray = ImageOps.grayscale(self.refImage)
         #refImage.close()
-        self.refArray = np.asarray(self.refGray)
+        self.refArray = np.asarray(refGray)
         if self.dbg[0]:
             print(len(self.refArray), len(self.refArray[0]),
                   self.refArray[0][0])
@@ -751,25 +751,23 @@ class Meter():
         else:
             plt.show()
 
-    def tbDraw(self, image, lcdShape, rows, cols):
+    def tbDraw(self, array, lcdShape, rows, cols):
         (cr, lc, rc, rr, tr, br) = self.tbVars(lcdShape)
-        targetDraw = image.copy()
-        draw1 = ImageDraw.Draw(targetDraw)
-        d = draw1.line
-        d(((lc - cr, tr - rr), (rc + cr, tr - rr)), fill=BLACK_FILL)
-        d(((rc + cr, tr - rr), (rc + cr, br + rr)), fill=BLACK_FILL)
-        d(((rc + cr, br + rr), (lc - cr, br + rr)), fill=BLACK_FILL)
-        d(((lc - cr, br + rr), (lc - cr, tr - rr)), fill=BLACK_FILL)
+        rgbImage = self.rgbImage(array)
+        rgbDraw = ImageDraw.Draw(rgbImage)
+        d = rgbDraw.line
+        fill = ImageColor.getrgb("red")
+        d(((lc - cr, tr - rr), (rc + cr, tr - rr),
+           (rc + cr, br + rr), (lc - cr, br + rr),
+           (lc - cr, tr - rr)), fill=ImageColor.getrgb("red"))
 
         if (len(cols) == 2) and (len(rows) == 2):
             (t, b) = rows
             (l, r) = cols
-            d(((l, t), (r, t)), fill=WHITE_FILL)
-            d(((r, t), (r, b)), fill=WHITE_FILL)
-            d(((r, b), (l, b)), fill=WHITE_FILL)
-            d(((l, b), (l, t)), fill=WHITE_FILL)
+            d(((l, t), (r, t), (r, b), (l, b),
+               (l, t)), fill=ImageColor.getrgb("yellow"))
 
-        targetDraw.save("targetDraw1.png", "PNG")
+        rgbImage.save("targetDraw1.png", "PNG")
 
     def tbVars(self, lcdShape):
         cr = int(lcdShape.width * TARGET_COLUMN_RANGE)
@@ -884,22 +882,22 @@ class Meter():
             self.drawPlot9(array, lcdShape, temps)
 
         if self.draw:
-            self.tbDraw(self.targetGray, lcdShape, rows, cols)
+            self.tbDraw(array, lcdShape, rows, cols)
             
         return (rows, cols)
 
     def cropRef(self, lcdShape):
-        if self.draw:
-            self.refGray.save("ref.png", "PNG")
-            drawImg = ImageDraw.Draw(self.refGray)
-            l = lcdShape.left
-            r = lcdShape.right
-            t = lcdShape.top
-            b = lcdShape.bottom
-            drawImg.line(((l, t), (r, t)), fill=WHITE_FILL)
-            drawImg.line(((r, t), (r, b)), fill=WHITE_FILL)
-            drawImg.line(((r, b), (l, b)), fill=WHITE_FILL)
-            drawImg.line(((l, b), (l, t)), fill=WHITE_FILL)
+        # if self.draw:
+        #     self.refGray.save("ref.png", "PNG")
+        #     drawImg = ImageDraw.Draw(self.refGray)
+        #     l = lcdShape.left
+        #     r = lcdShape.right
+        #     t = lcdShape.top
+        #     b = lcdShape.bottom
+        #     drawImg.line(((l, t), (r, t)), fill=WHITE_FILL)
+        #     drawImg.line(((r, t), (r, b)), fill=WHITE_FILL)
+        #     drawImg.line(((r, b), (l, b)), fill=WHITE_FILL)
+        #     drawImg.line(((l, b), (l, t)), fill=WHITE_FILL)
 
         if self.dbg[0]:
             print("width %3d height %3d pixels %5d, top %3d bottom %3d" % \
@@ -1004,7 +1002,7 @@ class Meter():
         else:
             plt.show()
 
-    def refDraw(self, image, lcdShape, seg, digitData, name="refDraw"):
+    def refDraw(self, array, lcdShape, seg, digitData, name="refDraw"):
         x0 = lcdShape.right
         y0 = lcdShape.top
         l = x0 - lcdShape.width
@@ -1012,17 +1010,12 @@ class Meter():
         t = lcdShape.topRow + y0
         b = lcdShape.botRow + y0
 
-        if image.mode == 'RGB':
-            fill0 = ImageColor.getrgb("red")
-            fill1 = ImageColor.getrgb("blue")
-            fill2 = ImageColor.getrgb("green")
-            fill3 = ImageColor.getrgb("yellow")
-        else:
-            fill0 = BLACK_FILL
-            fill1 = WHITE_FILL
-            fill2 = GRAY_FILL
-            fill3 = GRAY_FILL
+        fill0 = ImageColor.getrgb("red")
+        fill1 = ImageColor.getrgb("blue")
+        fill2 = ImageColor.getrgb("green")
+        fill3 = ImageColor.getrgb("yellow")
 
+        image = self.rgbImage(array)
         refDraw = image.copy()
         d = ImageDraw.Draw(refDraw).line
         d(((l, t), (r, t)), fill=fill0)
@@ -1054,7 +1047,7 @@ class Meter():
 
         refDraw.save(name + "1.png", "PNG")
 
-        refDraw = image.copy()
+        refDraw = image
         d = ImageDraw.Draw(refDraw).line
 
         for dig, data in enumerate(digitData):
@@ -1266,7 +1259,7 @@ class Meter():
 
         if self.draw:
             # self.refDraw(self.refGray, lcdShape, seg, digitData)
-            self.refDraw(self.refImage, lcdShape, seg, digitData)
+            self.refDraw(self.refArray, lcdShape, seg, digitData)
 
         if self.plot[4]:
             self.drawPlot4(self.refArray, lcdShape, seg, digitData)
@@ -1437,10 +1430,10 @@ class Meter():
             print("readError %3d " % (self.readError), end='')
         print(name)
 
-    def saveDirError(self, image, lcdShape, digitData):
+    def saveDirError(self, array, lcdShape, digitData):
         self.errCtr += 1
         name = "dirErr-%03d-%s" % (self.errCtr, timeStr()[4:])
-        self.tDraw(self.targetImage, lcdShape, digitData, name)
+        self.tDraw(array, lcdShape, digitData, name)
         self.dirError += 1
         print("dirError %3d " % (self.dirError), end='')
         print(name)
@@ -1448,8 +1441,8 @@ class Meter():
 
     def openTarget(self, targetFile, lcdShape):
         self.targetImage = Image.open(targetFile)
-        self.targetGray = ImageOps.grayscale(self.targetImage)
-        targetArray = np.asarray(self.targetGray)
+        targetGray = ImageOps.grayscale(self.targetImage)
+        targetArray = np.asarray(targetGray)
         lcdShape.setTarget(targetArray)
         if LINUX:
             cm.setTarget(targetArray.ravel(), \
@@ -1468,27 +1461,19 @@ class Meter():
             # targetDraw.save("targetDraw0.png", "PNG")
         return targetArray
 
-    def tDraw(self, image, lcdShape, digitData, name="targetDraw2"):
-        targetDraw = image.copy()
-        draw1 = ImageDraw.Draw(targetDraw)
+    def tDraw(self, array, lcdShape, digitData, name="targetDraw2"):
+        rgbImage = self.rgbImage(array)
+        rgbDraw = ImageDraw.Draw(rgbImage)
+
         l = lcdShape.left
         r = lcdShape.right
         t = lcdShape.top
         b = lcdShape.bottom
-        color = image.mode == 'RGB'
 
-        d = draw1.line
-        if color:
-            fill = ImageColor.getrgb("yellow")
-            d(((l, t), (r, t)), fill=fill)
-            d(((r, t), (r, b)), fill=fill)
-            d(((r, b), (l, b)), fill=fill)
-            d(((l, b), (l, t)), fill=fill)
-        else:
-            d(((l, t), (r, t)), fill=WHITE_FILL)
-            d(((r, t), (r, b)), fill=WHITE_FILL)
-            d(((r, b), (l, b)), fill=WHITE_FILL)
-            d(((l, b), (l, t)), fill=WHITE_FILL)
+        d = rgbDraw.line
+        fill = ImageColor.getrgb("yellow")
+        d(((l, t), (r, t), (r, b), (l, b),
+           (l, t)), fill=fill)
 
         y0 = lcdShape.top
         for data in digitData:
@@ -1500,32 +1485,21 @@ class Meter():
             rowRange = data.rowRange
             dirT = data.dirStart + y0
             dirB = data.dirEnd + y0
-            if color:
-                fill0 = ImageColor.getrgb("red")
-                fill1 = ImageColor.getrgb("blue")
-                d(((colT, topRow), (colT+colRangeT, topRow)), fill=fill0)
-                d(((colT, topRow), (colT-colRangeT, topRow)), fill=fill1)
-                d(((colB, botRow), (colB+colRangeT, botRow)), fill=fill1)
-                d(((colB, botRow), (colB-colRangeT, botRow)), fill=fill0)
 
-                d(((colT, topRow), (colT, topRow-rowRange)), fill=fill0)
-                d(((colT, topRow), (colT, topRow+rowRange)), fill=fill1)
-                d(((colT, botRow), (colT, botRow+rowRange)), fill=fill0)
+            fill0 = ImageColor.getrgb("red")
+            fill1 = ImageColor.getrgb("blue")
+            d(((colT, topRow), (colT+colRangeT, topRow)), fill=fill0)
+            d(((colT, topRow), (colT-colRangeT, topRow)), fill=fill1)
+            d(((colB, botRow), (colB+colRangeT, botRow)), fill=fill1)
+            d(((colB, botRow), (colB-colRangeT, botRow)), fill=fill0)
 
-                d(((colT, dirT), (colT, dirB)), fill=fill1)
-            else:
-                d(((colT, topRow), (colT+colRangeT, topRow)), fill=BLACK_FILL)
-                d(((colT, topRow), (colT-colRangeT, topRow)), fill=WHITE_FILL)
-                d(((colB, botRow), (colB+colRangeT, botRow)), fill=WHITE_FILL)
-                d(((colB, botRow), (colB-colRangeT, botRow)), fill=BLACK_FILL)
+            d(((colT, topRow), (colT, topRow-rowRange)), fill=fill0)
+            d(((colT, topRow), (colT, topRow+rowRange)), fill=fill1)
+            d(((colT, botRow), (colT, botRow+rowRange)), fill=fill0)
 
-                d(((colT, topRow), (colT, topRow-rowRange)), fill=BLACK_FILL)
-                d(((colT, topRow), (colT, topRow+rowRange)), fill=WHITE_FILL)
-                d(((colT, botRow), (colT, botRow+rowRange)), fill=BLACK_FILL)
+            d(((colT, dirT), (colT, dirB)), fill=fill1)
 
-                d(((colT, dirT), (colT, dirB)), fill=WHITE_FILL)
-
-        targetDraw.save(name + ".png", "PNG")
+        rgbImage.save(name + ".png", "PNG")
 
     def drawPlot6(self, array, lcdShape, digitData):
         fig, axs = plt.subplots(3, 2, sharex=True)
@@ -1571,7 +1545,7 @@ class Meter():
 
     def readDisplay(self, targetArray, lcdShape, digitData):
         if self.draw:
-            self.tDraw(self.targetGray, lcdShape, digitData)
+            self.tDraw(targetArray, lcdShape, digitData)
 
         if self.plot[6]:
             self.drawPlot6(targetArray, lcdShape, digitData)
@@ -1712,25 +1686,17 @@ class Meter():
                     break
                 except IncompleteRead:
                     print("**%s!IncompleteRead retry %d" % (timeStr(), retry))
-                    sys.stdout.flush()
-                    retry -= 1
-                    if retry <= 0:
-                        sys.exit()
-                    sleep(10)
                 except socket.timeout:
                     print("**%s!socket.timeout retry %d" % (timeStr(), retry))
-                    sys.stdout.flush()
-                    retry -= 1
-                    if retry <= 0:
-                        sys.exit()
-                    sleep(10)
                 except URLError:
                     print("**%s!URLError retry %d" % (timeStr(), retry))
-                    sys.stdout.flush()
-                    retry -= 1
-                    if retry <= 0:
-                        sys.exit()
-                    sleep(10)
+                sys.stdout.flush()
+                retry -= 1
+                if retry <= 0:
+                    sys.exit()
+                if LINUX:
+                    cm.loopSync()
+                sleep(10)
                     
             targetArray = self.openTarget(self.targetFile, lcdShape)
 
@@ -1740,7 +1706,7 @@ class Meter():
                     if self.draw and (self.dirError < 100):
                         dirErrCount += 1
                         if dirErrCount == 1:
-                            self.saveDirError(self.targetImage, lcdShape, digitData)
+                            self.saveDirError(targetArray, lcdShape, digitData)
                 else:
                     dirErrCount = 0
                     
@@ -1785,10 +1751,15 @@ class Meter():
             sys.stdout.flush()
             sleep(.25)
 
-    def cmTBDraw(self, array, shape, lcdShape, ttl):
+    def rgbImage(self, array):
         tImage = Image.fromarray(array)
-        rgbImage = Image.new("RGBA", tImage.size)
+        rgbImage = Image.new("RGB", tImage.size)
         rgbImage.paste(tImage)
+        tImage.close();
+        return rgbImage
+
+    def cmTBDraw(self, array, shape, lcdShape, ttl):
+        rgbImage = self.rgbImage(array)
         rgbDraw = ImageDraw.Draw(rgbImage)
         l = rgbDraw.line
         l(((shape.left,  shape.top),    (shape.right, shape.top), \
@@ -1852,7 +1823,7 @@ class Meter():
                 tFile = io.BytesIO(contents)
                 tArray = self.openTarget(tFile, lcdShape)
             else:
-                self.targetGray = self.refGray
+                # self.targetGray = self.refGray
                 tArray = self.refArray
 
             print("call setup cm lcdShape")
@@ -1879,7 +1850,7 @@ class Meter():
             #         lcdShape.print()
             # cm.cvar.updateEna = int(self.update)
         else:
-            self.targetGray = self.refGray
+            # self.targetGray = self.refGray
             sys.stdout.flush()
 
         print("call self.targetBounds 1")
@@ -1944,7 +1915,7 @@ class Meter():
                     self.drawPlot5(refArray, shape, tmpData, "5a")
 
                 if self.draw:
-                    self.tDraw(self.refImage, shape, tmpData, "targetDrawL")
+                    self.tDraw(refArray, shape, tmpData, "targetDrawL")
 
             if False:
                 cm.findRefSegments(self.refArray.ravel(), \
@@ -1996,7 +1967,7 @@ class Meter():
                 if self.draw:
                     cm.printShape()
                     cm.printData()
-                    self.tDraw(self.targetGray, shapeCopy(), digitDataCopy(), \
+                    self.tDraw(targetArray, shapeCopy(), digitDataCopy(), \
                                     "targetDrawX")
             # else:
             if True:
@@ -2013,6 +1984,7 @@ rm = 'rm -f '
 os.system(rm + 'ref.png')
 os.system(rm + 'refDraw*.png')
 os.system(rm + 'targetDraw*.png')
+os.system(rm + 'tb*.png')
 os.system(rm + 'plot*.png')
 os.system(rm + 'dirErr*.png')
 os.system(rm + 'err*.png')

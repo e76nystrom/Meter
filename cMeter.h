@@ -103,10 +103,11 @@ void targetUpdate(void);
 int targetBounds(uint8_t *array, int n, int w, int upd);
 void findRefSegments(uint8_t *array, int n, int w);
 
-void loopInit(void);
-
 void decodeInit();
 void readDisplay(uint8_t *array, int n, int *val, int *dirIndex, int *dirVal);
+
+void loopInit(void);
+void loopSync(void);
 int loopProcess(uint8_t *array, int n);
 
 double inplace(double *invec, int n);

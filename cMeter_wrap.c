@@ -4296,18 +4296,6 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_loopInit(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  
-  if (!SWIG_Python_UnpackTuple(args, "loopInit", 0, 0, 0)) SWIG_fail;
-  loopInit();
-  resultobj = SWIG_Py_Void();
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
 SWIGINTERN PyObject *_wrap_decodeInit(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   
@@ -4388,6 +4376,30 @@ fail:
       Py_DECREF(array1); 
     }
   }
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_loopInit(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  
+  if (!SWIG_Python_UnpackTuple(args, "loopInit", 0, 0, 0)) SWIG_fail;
+  loopInit();
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_loopSync(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  
+  if (!SWIG_Python_UnpackTuple(args, "loopSync", 0, 0, 0)) SWIG_fail;
+  loopSync();
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
   return NULL;
 }
 
@@ -4668,9 +4680,10 @@ static PyMethodDef SwigMethods[] = {
 	 { "targetUpdate", _wrap_targetUpdate, METH_NOARGS, NULL},
 	 { "targetBounds", _wrap_targetBounds, METH_VARARGS, NULL},
 	 { "findRefSegments", _wrap_findRefSegments, METH_VARARGS, NULL},
-	 { "loopInit", _wrap_loopInit, METH_NOARGS, NULL},
 	 { "decodeInit", _wrap_decodeInit, METH_NOARGS, NULL},
 	 { "readDisplay", _wrap_readDisplay, METH_O, NULL},
+	 { "loopInit", _wrap_loopInit, METH_NOARGS, NULL},
+	 { "loopSync", _wrap_loopSync, METH_NOARGS, NULL},
 	 { "loopProcess", _wrap_loopProcess, METH_O, NULL},
 	 { "inplace", _wrap_inplace, METH_O, NULL},
 	 { "arrayTest", _wrap_arrayTest, METH_VARARGS, NULL},

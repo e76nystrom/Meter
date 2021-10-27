@@ -165,9 +165,26 @@ typedef struct sDigitData
 
 T_DIGIT_DATA digitData[MAX_DIGITS];
 
-// a = numpy.empty([800, 600], numpy.uint8)
-// a[0][0] = 255
-// cMeter.setArray(a.ravel())
+typedef struct
+{
+ bool sync;
+ int lastVal;
+ int lastTmp;
+ int check;
+ int ctr;
+ int delta;
+ int meterVal[4];
+ int lastDir;
+ int dirSign;
+ int net;
+ int fwd;
+ int rev;
+ int netTotal;
+ int fwdTotal;
+ int revTotal;
+} T_METER, *P_METER;
+
+T_METER m;
 
 #if defined(__arm__)
 
@@ -1430,32 +1447,6 @@ int readDirection(uint8_t *array, int n, int index)
 }
 */
 
-typedef struct
-{
- bool sync;
- int lastVal;
- int lastTmp;
- int check;
- int ctr;
- int delta;
- int meterVal[4];
- int lastDir;
- int dirSign;
- int net;
- int fwd;
- int rev;
- int netTotal;
- int fwdTotal;
- int revTotal;
-} T_METER, *P_METER;
-
-T_METER m;
-
-void loopInit(void)
-{
- memset((void *) &m, 0, sizeof(m));
-}
-
 void updateReading(int val)
 {
  if (val != m.lastVal)
@@ -1623,6 +1614,18 @@ void readDisplay(uint8_t *array, int n, int *val,
  *val = meterVal;
  *dirVal = dirV;
  *dirIndex = dirV <= 0x30 ? dirConv[dirV] : DIR_INV;
+}
+
+void loopInit(void)
+{
+ memset((void *) &m, 0, sizeof(m));
+}
+
+void loopSync(void)
+{
+ m.sync = false;
+ m.lastVal = -1;
+ m.lastTmp = -1;
 }
 
 int loopProcess(uint8_t *array, int n)

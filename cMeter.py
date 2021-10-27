@@ -131,14 +131,17 @@ def targetBounds(array, w, upd):
 def findRefSegments(array, w):
     return _cMeter.findRefSegments(array, w)
 
-def loopInit():
-    return _cMeter.loopInit()
-
 def decodeInit():
     return _cMeter.decodeInit()
 
 def readDisplay(array):
     return _cMeter.readDisplay(array)
+
+def loopInit():
+    return _cMeter.loopInit()
+
+def loopSync():
+    return _cMeter.loopSync()
 
 def loopProcess(array):
     return _cMeter.loopProcess(array)
