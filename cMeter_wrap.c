@@ -3315,52 +3315,6 @@ SWIGINTERNINLINE PyObject*
 #ifdef __cplusplus
 extern "C" {
 #endif
-SWIGINTERN int Swig_var_dbg0_set(PyObject *_val) {
-  {
-    int val;
-    int res = SWIG_AsVal_int(_val, &val);
-    if (!SWIG_IsOK(res)) {
-      SWIG_exception_fail(SWIG_ArgError(res), "in variable '""dbg0""' of type '""int""'");
-    }
-    dbg0 = (int)(val);
-  }
-  return 0;
-fail:
-  return 1;
-}
-
-
-SWIGINTERN PyObject *Swig_var_dbg0_get(void) {
-  PyObject *pyobj = 0;
-  
-  pyobj = SWIG_From_int((int)(dbg0));
-  return pyobj;
-}
-
-
-SWIGINTERN int Swig_var_dbg1_set(PyObject *_val) {
-  {
-    int val;
-    int res = SWIG_AsVal_int(_val, &val);
-    if (!SWIG_IsOK(res)) {
-      SWIG_exception_fail(SWIG_ArgError(res), "in variable '""dbg1""' of type '""int""'");
-    }
-    dbg1 = (int)(val);
-  }
-  return 0;
-fail:
-  return 1;
-}
-
-
-SWIGINTERN PyObject *Swig_var_dbg1_get(void) {
-  PyObject *pyobj = 0;
-  
-  pyobj = SWIG_From_int((int)(dbg1));
-  return pyobj;
-}
-
-
 SWIGINTERN int Swig_var_updateEna_set(PyObject *_val) {
   {
     int val;
@@ -3481,6 +3435,35 @@ SWIGINTERN PyObject *_wrap_piInit(PyObject *SWIGUNUSEDPARM(self), PyObject *args
   
   if (!SWIG_Python_UnpackTuple(args, "piInit", 0, 0, 0)) SWIG_fail;
   piInit();
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_dbgSet(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  int arg1 ;
+  int arg2 ;
+  int val1 ;
+  int ecode1 = 0 ;
+  int val2 ;
+  int ecode2 = 0 ;
+  PyObject *swig_obj[2] ;
+  
+  if (!SWIG_Python_UnpackTuple(args, "dbgSet", 2, 2, swig_obj)) SWIG_fail;
+  ecode1 = SWIG_AsVal_int(swig_obj[0], &val1);
+  if (!SWIG_IsOK(ecode1)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode1), "in method '" "dbgSet" "', argument " "1"" of type '" "int""'");
+  } 
+  arg1 = (int)(val1);
+  ecode2 = SWIG_AsVal_int(swig_obj[1], &val2);
+  if (!SWIG_IsOK(ecode2)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "dbgSet" "', argument " "2"" of type '" "int""'");
+  } 
+  arg2 = (int)(val2);
+  dbgSet(arg1,arg2);
   resultobj = SWIG_Py_Void();
   return resultobj;
 fail:
@@ -3817,39 +3800,6 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_getSegColumn(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  int *arg1 = (int *) 0 ;
-  int arg2 ;
-  int arg3 ;
-  PyArrayObject *array1 = NULL ;
-  int i1 = 1 ;
-  int val3 ;
-  int ecode3 = 0 ;
-  PyObject *swig_obj[2] ;
-  
-  if (!SWIG_Python_UnpackTuple(args, "getSegColumn", 2, 2, swig_obj)) SWIG_fail;
-  {
-    array1 = obj_to_array_no_conversion(swig_obj[0], NPY_INT);
-    if (!array1 || !require_dimensions(array1,1) || !require_contiguous(array1)
-      || !require_native(array1)) SWIG_fail;
-    arg1 = (int*) array_data(array1);
-    arg2 = 1;
-    for (i1=0; i1 < array_numdims(array1); ++i1) arg2 *= array_size(array1,i1);
-  }
-  ecode3 = SWIG_AsVal_int(swig_obj[1], &val3);
-  if (!SWIG_IsOK(ecode3)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "getSegColumn" "', argument " "3"" of type '" "int""'");
-  } 
-  arg3 = (int)(val3);
-  getSegColumn(arg1,arg2,arg3);
-  resultobj = SWIG_Py_Void();
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
 SWIGINTERN PyObject *_wrap_setDigitCol(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   int arg1 ;
@@ -4102,6 +4052,55 @@ SWIGINTERN PyObject *_wrap_getDirRows(PyObject *SWIGUNUSEDPARM(self), PyObject *
   } 
   arg3 = (int)(val3);
   getDirRows(arg1,arg2,arg3);
+  resultobj = SWIG_Py_Void();
+  if (SWIG_IsTmpObj(res1)) {
+    resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_From_int((*arg1)));
+  } else {
+    int new_flags = SWIG_IsNewObj(res1) ? (SWIG_POINTER_OWN |  0 ) :  0 ;
+    resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_NewPointerObj((void*)(arg1), SWIGTYPE_p_int, new_flags));
+  }
+  if (SWIG_IsTmpObj(res2)) {
+    resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_From_int((*arg2)));
+  } else {
+    int new_flags = SWIG_IsNewObj(res2) ? (SWIG_POINTER_OWN |  0 ) :  0 ;
+    resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_NewPointerObj((void*)(arg2), SWIGTYPE_p_int, new_flags));
+  }
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_getSegData(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  int *arg1 = (int *) 0 ;
+  int *arg2 = (int *) 0 ;
+  int arg3 ;
+  int arg4 ;
+  int temp1 ;
+  int res1 = SWIG_TMPOBJ ;
+  int temp2 ;
+  int res2 = SWIG_TMPOBJ ;
+  int val3 ;
+  int ecode3 = 0 ;
+  int val4 ;
+  int ecode4 = 0 ;
+  PyObject *swig_obj[2] ;
+  
+  arg1 = &temp1;
+  arg2 = &temp2;
+  if (!SWIG_Python_UnpackTuple(args, "getSegData", 2, 2, swig_obj)) SWIG_fail;
+  ecode3 = SWIG_AsVal_int(swig_obj[0], &val3);
+  if (!SWIG_IsOK(ecode3)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "getSegData" "', argument " "3"" of type '" "int""'");
+  } 
+  arg3 = (int)(val3);
+  ecode4 = SWIG_AsVal_int(swig_obj[1], &val4);
+  if (!SWIG_IsOK(ecode4)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode4), "in method '" "getSegData" "', argument " "4"" of type '" "int""'");
+  } 
+  arg4 = (int)(val4);
+  getSegData(arg1,arg2,arg3,arg4);
   resultobj = SWIG_Py_Void();
   if (SWIG_IsTmpObj(res1)) {
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_From_int((*arg1)));
@@ -4447,12 +4446,38 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_drawTarget(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_drawTargetUpd(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   int result;
   
-  if (!SWIG_Python_UnpackTuple(args, "drawTarget", 0, 0, 0)) SWIG_fail;
-  result = (int)drawTarget();
+  if (!SWIG_Python_UnpackTuple(args, "drawTargetUpd", 0, 0, 0)) SWIG_fail;
+  result = (int)drawTargetUpd();
+  resultobj = SWIG_From_int((int)(result));
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_drawTargetErr(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  int result;
+  
+  if (!SWIG_Python_UnpackTuple(args, "drawTargetErr", 0, 0, 0)) SWIG_fail;
+  result = (int)drawTargetErr();
+  resultobj = SWIG_From_int((int)(result));
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_drawTargetDbg(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  int result;
+  
+  if (!SWIG_Python_UnpackTuple(args, "drawTargetDbg", 0, 0, 0)) SWIG_fail;
+  result = (int)drawTargetDbg();
   resultobj = SWIG_From_int((int)(result));
   return resultobj;
 fail:
@@ -4668,9 +4693,118 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_getSegColumn(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  int *arg1 = (int *) 0 ;
+  int arg2 ;
+  int arg3 ;
+  PyArrayObject *array1 = NULL ;
+  int i1 = 1 ;
+  int val3 ;
+  int ecode3 = 0 ;
+  PyObject *swig_obj[2] ;
+  
+  if (!SWIG_Python_UnpackTuple(args, "getSegColumn", 2, 2, swig_obj)) SWIG_fail;
+  {
+    array1 = obj_to_array_no_conversion(swig_obj[0], NPY_INT);
+    if (!array1 || !require_dimensions(array1,1) || !require_contiguous(array1)
+      || !require_native(array1)) SWIG_fail;
+    arg1 = (int*) array_data(array1);
+    arg2 = 1;
+    for (i1=0; i1 < array_numdims(array1); ++i1) arg2 *= array_size(array1,i1);
+  }
+  ecode3 = SWIG_AsVal_int(swig_obj[1], &val3);
+  if (!SWIG_IsOK(ecode3)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "getSegColumn" "', argument " "3"" of type '" "int""'");
+  } 
+  arg3 = (int)(val3);
+  getSegColumn(arg1,arg2,arg3);
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_getAvgPixel(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  uint8_t *arg1 = (uint8_t *) 0 ;
+  int arg2 ;
+  int arg3 ;
+  PyArrayObject *array1 = NULL ;
+  int is_new_object1 = 0 ;
+  int val3 ;
+  int ecode3 = 0 ;
+  PyObject *swig_obj[2] ;
+  
+  if (!SWIG_Python_UnpackTuple(args, "getAvgPixel", 2, 2, swig_obj)) SWIG_fail;
+  {
+    npy_intp size[1] = {
+      -1 
+    };
+    array1 = obj_to_array_contiguous_allow_conversion(swig_obj[0],
+      NPY_UINT8,
+      &is_new_object1);
+    if (!array1 || !require_dimensions(array1, 1) ||
+      !require_size(array1, size, 1)) SWIG_fail;
+    arg1 = (uint8_t*) array_data(array1);
+    arg2 = (int) array_size(array1,0);
+  }
+  ecode3 = SWIG_AsVal_int(swig_obj[1], &val3);
+  if (!SWIG_IsOK(ecode3)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "getAvgPixel" "', argument " "3"" of type '" "int""'");
+  } 
+  arg3 = (int)(val3);
+  getAvgPixel(arg1,arg2,arg3);
+  resultobj = SWIG_Py_Void();
+  {
+    if (is_new_object1 && array1)
+    {
+      Py_DECREF(array1); 
+    }
+  }
+  return resultobj;
+fail:
+  {
+    if (is_new_object1 && array1)
+    {
+      Py_DECREF(array1); 
+    }
+  }
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_getArray(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  uint8_t *arg1 = (uint8_t *) 0 ;
+  int arg2 ;
+  PyArrayObject *array1 = NULL ;
+  int i1 = 1 ;
+  PyObject *swig_obj[1] ;
+  
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  {
+    array1 = obj_to_array_no_conversion(swig_obj[0], NPY_UINT8);
+    if (!array1 || !require_dimensions(array1,1) || !require_contiguous(array1)
+      || !require_native(array1)) SWIG_fail;
+    arg1 = (uint8_t*) array_data(array1);
+    arg2 = 1;
+    for (i1=0; i1 < array_numdims(array1); ++i1) arg2 *= array_size(array1,i1);
+  }
+  getArray(arg1,arg2);
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 static PyMethodDef SwigMethods[] = {
 	 { "SWIG_PyInstanceMethod_New", SWIG_PyInstanceMethod_New, METH_O, NULL},
 	 { "piInit", _wrap_piInit, METH_NOARGS, NULL},
+	 { "dbgSet", _wrap_dbgSet, METH_VARARGS, NULL},
 	 { "setRef", _wrap_setRef, METH_VARARGS, NULL},
 	 { "setTarget", _wrap_setTarget, METH_VARARGS, NULL},
 	 { "setSize", _wrap_setSize, METH_VARARGS, NULL},
@@ -4680,13 +4814,13 @@ static PyMethodDef SwigMethods[] = {
 	 { "getColumns", _wrap_getColumns, METH_NOARGS, NULL},
 	 { "getSize", _wrap_getSize, METH_NOARGS, NULL},
 	 { "printShape", _wrap_printShape, METH_NOARGS, NULL},
-	 { "getSegColumn", _wrap_getSegColumn, METH_VARARGS, NULL},
 	 { "setDigitCol", _wrap_setDigitCol, METH_VARARGS, NULL},
 	 { "setSegRows", _wrap_setSegRows, METH_VARARGS, NULL},
 	 { "setDirRows", _wrap_setDirRows, METH_VARARGS, NULL},
 	 { "getDigitCol", _wrap_getDigitCol, METH_VARARGS, NULL},
 	 { "getSegRows", _wrap_getSegRows, METH_VARARGS, NULL},
 	 { "getDirRows", _wrap_getDirRows, METH_O, NULL},
+	 { "getSegData", _wrap_getSegData, METH_VARARGS, NULL},
 	 { "prtDigDat", _wrap_prtDigDat, METH_O, NULL},
 	 { "prtDigDatC", _wrap_prtDigDatC, METH_O, NULL},
 	 { "printData", _wrap_printData, METH_NOARGS, NULL},
@@ -4698,12 +4832,17 @@ static PyMethodDef SwigMethods[] = {
 	 { "loopInit", _wrap_loopInit, METH_NOARGS, NULL},
 	 { "loopSync", _wrap_loopSync, METH_NOARGS, NULL},
 	 { "loopProcess", _wrap_loopProcess, METH_O, NULL},
-	 { "drawTarget", _wrap_drawTarget, METH_NOARGS, NULL},
+	 { "drawTargetUpd", _wrap_drawTargetUpd, METH_NOARGS, NULL},
+	 { "drawTargetErr", _wrap_drawTargetErr, METH_NOARGS, NULL},
+	 { "drawTargetDbg", _wrap_drawTargetDbg, METH_NOARGS, NULL},
 	 { "inplace", _wrap_inplace, METH_O, NULL},
 	 { "arrayTest", _wrap_arrayTest, METH_VARARGS, NULL},
 	 { "getSumArray", _wrap_getSumArray, METH_VARARGS, NULL},
 	 { "getDeltaArray", _wrap_getDeltaArray, METH_VARARGS, NULL},
 	 { "getIndexArray", _wrap_getIndexArray, METH_VARARGS, NULL},
+	 { "getSegColumn", _wrap_getSegColumn, METH_VARARGS, NULL},
+	 { "getAvgPixel", _wrap_getAvgPixel, METH_VARARGS, NULL},
+	 { "getArray", _wrap_getArray, METH_O, NULL},
 	 { NULL, NULL, 0, NULL }
 };
 
@@ -5471,8 +5610,6 @@ SWIG_init(void) {
   }
   PyDict_SetItemString(md, "cvar", globals);
   Py_DECREF(globals);
-  SWIG_addvarlink(globals, "dbg0", Swig_var_dbg0_get, Swig_var_dbg0_set);
-  SWIG_addvarlink(globals, "dbg1", Swig_var_dbg1_get, Swig_var_dbg1_set);
   SWIG_addvarlink(globals, "updateEna", Swig_var_updateEna_get, Swig_var_updateEna_set);
   SWIG_addvarlink(globals, "TARGET_COLUMN_RANGE", Swig_var_TARGET_COLUMN_RANGE_get, Swig_var_TARGET_COLUMN_RANGE_set);
   SWIG_addvarlink(globals, "TARGET_ROW_RANGE", Swig_var_TARGET_ROW_RANGE_get, Swig_var_TARGET_ROW_RANGE_set);

@@ -16,6 +16,7 @@
 %apply (double* IN_ARRAY1, int DIM1) {(double* invec, int n)};
 %apply (uint8_t* IN_ARRAY1, int DIM1) {(uint8_t* array, int n)};
 %apply (int* IN_ARRAY1, int DIM1) {(int* segRows, int n)};
+%apply (uint8_t* INPLACE_ARRAY1, int DIM1) {(uint8_t* cArray, int n)};
 %apply (int* INPLACE_ARRAY1, int DIM1) {(int* rSegRows, int n)};
 %apply (int* INPLACE_ARRAY1, int DIM1) {(int* segCol, int n)};
 
@@ -40,6 +41,9 @@
 %apply int *OUTPUT {int *wVal};
 %apply int *OUTPUT {int *tRowVal};
 %apply int *OUTPUT {int *bRowVal};
+
+%apply int *OUTPUT {int *start};
+%apply int *OUTPUT {int *offset};
 //%array_class(struct digitData, digitArray);
 
 %include "cMeter.h"

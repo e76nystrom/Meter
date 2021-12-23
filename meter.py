@@ -125,6 +125,26 @@ def timeStr():
     now = datetime.now(tz=tz)
     return(now.strftime("%b_%d_%Y_%H-%M-%S"))
 
+DUMP_COL = 16
+
+def dumpBuf(array):
+    col = 0;
+    for i in range(len(array)):
+        if col == 0:
+            print("%3d  " % (i), end="")
+        print(" %4d" % (array[i]), end="")
+        col += 1
+        if col == DUMP_COL:
+            col = 0
+            print()
+    if col != 0:
+        print()
+
+def coord(loc, w):
+    row = loc // w
+    col = loc % w
+    return (col, row)
+
 class LcdShape():
     def __init__(self, array=None, dbg=False):
         self.dbg = dbg
@@ -189,13 +209,20 @@ class LcdShape():
         self.setSize(False)
         self.print()
 
+    def cmSet(self):
+        cm.setRef(self.rArray.ravel(), len(self.rArray[0]), \
+                  len(self.rArray))
+        cm.setSize(self.width, self.height)
+        cm.setRows(self.top, self.bottom)
+        cm.setColumns(self.left, self.right)
+
     def cmGet(self):
         (self.top, self.bottom) = cm.getRows()
         (self.left, self.right) = cm.getColumns()
         (self.height, self.width, self.topRow, self.botRow) = cm.getSize()
 
     def print(self):
-        print("t %3d b %3d l %3d r %3d w %3d h %3d s %5d tr %3d br %3d" % \
+        print("p t %3d b %3d l %3d r %3d w %3d h %3d s %5d tr %3d br %3d" % \
               (self.top, self.bottom, self.left, self.right, \
 	       self.width, self.height, self.width * self.height, \
                self.topRow, self.botRow))
@@ -215,6 +242,8 @@ class DigitData():
         self.dirStart = 0
         self.dirEnd = 0
 
+        self.segData = None
+
     def setCol(self, strCol, endCol, index):
         self.strCol[index] = strCol
         self.endCol[index] = endCol
@@ -231,6 +260,11 @@ class DigitData():
     def setDirRows(self, dirStart, dirEnd):
         self.dirStart = dirStart
         self.dirEnd = dirEnd
+
+    def setSegData(self, n, segData):
+        if self.segData is None:
+            self.segData = [None for i in range(7)]
+        self.segData[n] = segData
 
     def cmGet(self, index):
         for i in range(2):
@@ -312,6 +346,12 @@ class Meter():
         self.arrayDiffs = 0
         self.dirError = 0
         self.readError = 0
+        self.drwUpdCnt = 0
+        self.drwErrCnt = 0
+        self.drwDbgCnt = 0
+        self.maxUpdCnt = 0
+        self.maxErrCnt = 0
+        self.maxDbgCnt = 0
 
     def setup(self):
         n = 1
@@ -766,7 +806,7 @@ class Meter():
                    lcdShape.topRow, lcdShape.botRow))
         return(lcdShape)
 
-    def drawPlot4(self, array, lcdShape, seg, digitData, ttl="4"):
+    def drawPlot4(self, array, lcdShape, seg, digitData, avgRow, ttl="4"):
         x0 = lcdShape.right
         y0 = lcdShape.top
         l = x0 - lcdShape.width
@@ -782,7 +822,10 @@ class Meter():
         fig.set_figheight(2 * fig.get_figheight())
 
         for i, rowNum in enumerate((t, b)):
-            row = self.refArray[rowNum]
+            if avgRow == None:
+                row = self.refArray[rowNum]
+            else:
+                row = avgRow[i]
             axs[i].plot(row[lcdShape.left:x0])
             axs[i].set_title("Ref Row %d start %d end %d" % (rowNum, x0, l))
             axs[i].plot([0, lcdShape.width], \
@@ -919,8 +962,8 @@ class Meter():
             d(((x0 - centerCol, segRows[0] + y0), \
                (x0 - centerCol, segRows[-1] + y0)), fill=fill0)
 
-            d(((x0 - centerCol, data.dirStart + y0), \
-               (x0 - centerCol, data.dirEnd + y0)), fill=fill3)
+            d(((x0 - centerCol+2, data.dirStart + y0), \
+               (x0 - centerCol+2, data.dirEnd + y0)), fill=fill3)
 
             d(((x0 - st, segRows[0] + y0), \
                (x0 - st, segRows[2] + y0)), fill=fill1)
@@ -945,10 +988,37 @@ class Meter():
             print("rowScan %3d x0 %3d" % (rowNum, x0))
         negDelta = True
         segColumn = []
-        row = self.refArray[rowNum]
-        lastPixel = int(row[x0 - 2])
-        for col in range(3, lcdShape.width):
-            pixel = int(row[x0 - col])
+        # row = self.refArray[rowNum]
+        # lastPixel = int(row[x0 - 2])
+
+        avgPixel = [0 for i in range(len(self.refArray[rowNum]))]
+
+        AVG_RANGE = 2
+        AVG_SIZE = 2 * AVG_RANGE + 1
+        SCAN_START = 3
+
+        for j in range(rowNum - AVG_RANGE, rowNum + AVG_RANGE + 1):
+            # print("row %d" % (j))
+            row = self.refArray[j]
+            for col in range(SCAN_START-1, lcdShape.width):
+                avgPixel[x0 - col] += row[x0 - col]
+                
+        for col in range(SCAN_START-1, lcdShape.width):
+            avgPixel[x0 - col] //= AVG_SIZE
+
+        # dumpBuf(avgPixel)
+        # print()
+
+        lastPixel = int(avgPixel[x0 - (SCAN_START - 1)])
+        for col in range(SCAN_START, lcdShape.width):
+            # pixel = int(row[x0 - col])
+            pixel = avgPixel[x0 - col]
+
+            # tmp = self.refArray[rowNum][x0 - col];
+            # colCount = len(segColumn)
+            # print("%3d index %3d avg %3d pixel %3d d %4d colCount %2d" %\
+	    #       (col, x0-col, pixel, tmp, pixel-tmp, colCount));
+
             if self.dbg[0] and False:
                 print("%3d %3d p %3d %s " % \
                       (col, x0-col, pixel, str(negDelta)[0]))
@@ -963,6 +1033,9 @@ class Meter():
                     segColumn.append(col)
                     negDelta = True
             lastPixel = pixel
+            if len(segColumn) >= MAX_COL:
+                break;
+        self.avgPixel.append(avgPixel)
         return segColumn
 
     # find location of segments on the reference array
@@ -981,6 +1054,7 @@ class Meter():
         index = 0
         digitData = []
         seg = []
+        self.avgPixel = []
         for i, rowNum in enumerate((t, b)):
             if self.dbg[0]:
                 print("%d row %3d" % (i, rowNum))
@@ -1123,7 +1197,8 @@ class Meter():
             self.refDraw(self.refArray, lcdShape, seg, digitData)
 
         if self.plot[4]:
-            self.drawPlot4(self.refArray, lcdShape, seg, digitData)
+            self.drawPlot4(self.refArray, lcdShape, seg, \
+                           digitData, self.avgPixel)
 
         if self.plot[5]:
             self.drawPlot5(self.refArray, lcdShape, digitData)
@@ -1358,7 +1433,52 @@ class Meter():
             d(((colT, topRow), (colT, topRow+rowRange)), fill=fill1)
             d(((colT, botRow), (colT, botRow+rowRange)), fill=fill0)
 
-            d(((colT, dirT), (colT, dirB)), fill=fill1)
+            d(((colT+1, dirT), (colT+1, dirB)), fill=fill1)
+
+        rgbImage.save(name + ".png", "PNG")
+
+    def segDraw(self, name="segDraw"):
+        lcdShape = LcdShape(self.refArray)
+        shape = LcdShape()
+        shape.cmGet()
+        
+        digitData = []
+        for index in range(MAX_DIGITS):
+            data = DigitData(0, 0)
+            digitData.append(data)
+            data.cmGet(index)
+            for n in range(7):
+                segData = cm.getSegData(index, n)
+                data.setSegData(n, segData)
+
+        size = lcdShape.rArrayH * lcdShape.rArrayW
+        cTarget = np.empty(size, np.uint8)
+        cm.getArray(cTarget)
+        cTarget = np.reshape(cTarget, (-1, lcdShape.rArrayW))
+
+        rgbImage = self.rgbImage(cTarget)
+        rgbDraw = ImageDraw.Draw(rgbImage)
+
+        w = lcdShape.rArrayW
+
+        l = shape.left
+        r = shape.right
+        t = shape.top
+        b = shape.bottom
+
+        d = rgbDraw.line
+        fill = ImageColor.getrgb("yellow")
+        d(((l, t), (r, t), (r, b), (l, b),
+           (l, t)), fill=fill)
+
+        y0 = shape.top
+        fill = ImageColor.getrgb("red")
+        for data in digitData:
+            for (start, offset) in data.segData:
+                if start != 0:
+                    (x0, y0) = coord(start, w)
+                    (x1, y1) = coord(start + offset, w)
+                    d(((x0, y0), (x1, y1)), fill=fill)
 
         rgbImage.save(name + ".png", "PNG")
 
@@ -1563,6 +1683,8 @@ class Meter():
             targetArray = self.openTarget(self.targetFile, lcdShape)
 
             if LINUX:
+                lcdShape.cmSet()
+                lcdShape.print()
                 dirError = cm.loopProcess(targetArray.ravel())
                 if dirError != 0:
                     if self.draw and (self.dirError < 100):
@@ -1572,13 +1694,46 @@ class Meter():
                 else:
                     dirErrCount = 0
 
-                if self.dbg[4] and cm.targetUpdated():
-                    self.tDraw(targetArray, lcdShape, digitdata,
-                               name="tUpd-" + timeStr())
+                if True:
+                    self.segDraw(name="segDraw-" + timeStr())
 
-                if self.dbg[5] and cm.drawTarget():
-                    self.tDraw(targetArray, lcdShape, digitData, \
-                               name="tErr-" + timeStr())
+                if self.dbg[4] and cm.drawTargetUpd():
+                    if (self.maxUpdCnt == 0) or \
+                       (self.drwUpdCnt < self.maxUpdCnt):
+                        self.tDraw(targetArray, lcdShape, digitdata,
+                                   name=(("tUpd-%03d-" % (self.drwUpdCnt)) + \
+                                         timeStr()))
+                        self.drwUpdCnt += 1
+
+                if self.dbg[5] and cm.drawTargetErr():
+                    if (self.maxErrCnt == 0) or \
+                       (self.drwErrCnt < self.maxErrCnt):
+                        self.tDraw(targetArray, lcdShape, digitData, \
+                                   name=(("tErr-%03d-" % (self.drwErrCnt)) + \
+                                         timeStr()))
+                        self.drwErrCnt += 1
+
+                if self.cDbg2 and cm.drawTargetDbg():
+                    if (self.maxDbgCnt == 0) or \
+                       (self.drwDbgCnt < self.maxDbgCnt):
+                        tmpShape = LcdShape()
+                        tmpShape.cmGet()
+                        tmpShape.print()
+
+                        tmpData = []
+                        for index in range(MAX_DIGITS):
+                            data = DigitData(0, 0)
+                            tmpData.append(data)
+                            data.cmGet(index)
+
+                        for data in tmpData:
+                            data.print()
+                            data.printC()
+
+                        self.tDraw(targetArray, tmpShape, tmpData,
+                                   name=(("tDbg-%03d-" % (self.drwDbgCnt)) + \
+                                         timeStr()))
+                        self.drwDbgCnt += 1
                     
                 sleep(.25)
                 continue
@@ -1673,8 +1828,9 @@ class Meter():
 
     def process(self):
         if LINUX:
-            cm.cvar.dbg0 = int(self.cDbg0)
-            cm.cvar.dbg1 = int(self.cDbg1)
+            cm.dbgSet(0, int(self.cDbg0))
+            cm.dbgSet(1, int(self.cDbg1))
+            cm.dbgSet(2, int(self.cDbg2))
             cm.cvar.TARGET_COLUMN_RANGE = TARGET_COLUMN_RANGE
             cm.cvar.TARGET_ROW_RANGE = TARGET_ROW_RANGE
             cm.cvar.SUM_THRESHOLD = SUM_THRESHOLD
@@ -1779,11 +1935,17 @@ class Meter():
 
                 if self.plot[4]:
                     seg = []
+                    avgRows = []
                     for index in range(2):
                         segColumns = np.empty(MAX_COL, np.int32)
                         cm.getSegColumn(segColumns, index)
                         seg.append(list(segColumns))
-                    self.drawPlot4(refArray, shape, seg, tmpData, "4a")
+
+                        avgPixel = np.empty(lcdShape.rArrayW, np.uint8)
+                        cm.getAvgPixel(avgPixel, index)
+                        avgRows.append(avgPixel)
+                    self.drawPlot4(refArray, shape, seg, tmpData,
+                                   avgRows, "4a")
 
                 if self.plot[5]:
                     self.drawPlot5(refArray, shape, tmpData, "5a")
@@ -1844,6 +2006,9 @@ class Meter():
                     cm.printData()
                     self.tDraw(targetArray, shapeCopy(), digitDataCopy(), \
                                "targetDrawX")
+                if True:
+                    self.segDraw(name="segDraw-" + timeStr())
+
             # else:
             if True:
                 (val, (dirVal, dirIndex)) = \
@@ -1863,7 +2028,15 @@ os.system(rm + 'tb*.png')
 os.system(rm + 'plot*.png')
 os.system(rm + 'dirErr*.png')
 os.system(rm + 'err*.png')
+os.system(rm + 'tUpd*.png')
+os.system(rm + 'tErr*.png')
+os.system(rm + 'tDbg*.png')
+os.system(rm + 'segDraw*.png')
 
 meter = Meter()
 meter.setup()
-meter.process()
+try:
+    meter.process()
+except KeyboardInterrupt:
+    pass
+    

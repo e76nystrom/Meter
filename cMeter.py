@@ -65,6 +65,9 @@ class _SwigNonDynamicMeta(type):
 def piInit():
     return _cMeter.piInit()
 
+def dbgSet(index, val):
+    return _cMeter.dbgSet(index, val)
+
 def setRef(array, w, h):
     return _cMeter.setRef(array, w, h)
 
@@ -92,9 +95,6 @@ def getSize():
 def printShape():
     return _cMeter.printShape()
 
-def getSegColumn(segCol, index):
-    return _cMeter.getSegColumn(segCol, index)
-
 def setDigitCol(strCol, endCol, index, n):
     return _cMeter.setDigitCol(strCol, endCol, index, n)
 
@@ -112,6 +112,9 @@ def getSegRows(segRows, index):
 
 def getDirRows(index):
     return _cMeter.getDirRows(index)
+
+def getSegData(index, n):
+    return _cMeter.getSegData(index, n)
 
 def prtDigDat(index):
     return _cMeter.prtDigDat(index)
@@ -146,8 +149,14 @@ def loopSync():
 def loopProcess(array):
     return _cMeter.loopProcess(array)
 
-def drawTarget():
-    return _cMeter.drawTarget()
+def drawTargetUpd():
+    return _cMeter.drawTargetUpd()
+
+def drawTargetErr():
+    return _cMeter.drawTargetErr()
+
+def drawTargetDbg():
+    return _cMeter.drawTargetDbg()
 
 def inplace(invec):
     return _cMeter.inplace(invec)
@@ -163,6 +172,15 @@ def getDeltaArray(deltaArray, index):
 
 def getIndexArray(indexArray, index):
     return _cMeter.getIndexArray(indexArray, index)
+
+def getSegColumn(segCol, index):
+    return _cMeter.getSegColumn(segCol, index)
+
+def getAvgPixel(array, index):
+    return _cMeter.getAvgPixel(array, index)
+
+def getArray(cArray):
+    return _cMeter.getArray(cArray)
 
 cvar = _cMeter.cvar
 

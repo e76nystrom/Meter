@@ -54,8 +54,6 @@ T_DIGIT_DATA digitData[6];
 
 */
 
-int dbg0 = false;
-int dbg1 = false;
 int updateEna = false;
 
 double TARGET_COLUMN_RANGE = 0.05;
@@ -73,6 +71,8 @@ void piInit(void);
 //void dbg2Set(void);
 //void dbg2Clr(void);
 
+void dbgSet(int index, int val);
+
 void setRef(uint8_t *array, int n, int w, int h);
 void setTarget(uint8_t *array, int n, int w, int h);
 void setSize(int width, int height);
@@ -85,8 +85,6 @@ void getSize(int *hVal, int *wVal, int *tRowVal, int *bRowVal);
 
 void printShape(void);
 
-void getSegColumn(int *segCol, int n, int index);
-
 void setDigitCol(int strCol, int endCol, int index, int n);
 void setSegRows(int *segRows, int n, int index);
 void setDirRows(int dirStart, int dirEnd, int index);
@@ -94,6 +92,7 @@ void setDirRows(int dirStart, int dirEnd, int index);
 void getDigitCol(int *rStrCol, int *rEndCol, int index, int n);
 void getSegRows(int *segRows, int n, int index);
 void getDirRows(int *rDirStart, int *rDirEnd, int index);
+void getSegData(int *start, int *offset, int index, int n);
 
 void prtDigDat(int index);
 void prtDigDatC(int index);
@@ -109,7 +108,9 @@ void readDisplay(uint8_t *array, int n, int *val, int *dirIndex, int *dirVal);
 void loopInit(void);
 void loopSync(void);
 int loopProcess(uint8_t *array, int n);
-int drawTarget(void);
+int drawTargetUpd(void);
+int drawTargetErr(void);
+int drawTargetDbg(void);
 
 double inplace(double *invec, int n);
 
@@ -118,3 +119,8 @@ int arrayTest(uint8_t *array, int n, int w, int row, int col);
 void getSumArray(int *sumArray, int n, int index);
 void getDeltaArray(int *deltaArray, int n, int index);
 void getIndexArray(int *indexArray, int n, int index);
+
+void getSegColumn(int *segCol, int n, int index);
+void getAvgPixel(uint8_t *array, int n, int index);
+
+void getArray(uint8_t *cArray, int n);

@@ -64,9 +64,13 @@ const int dirConv[] =
  4,				// 0x30
 };
 
-extern int dbg0;
-extern int dbg1;
+int dbg0 = false;
+int dbg1 = false;
+int dbg2 = false;
 extern int updateEna;
+
+#define ROW_LEN 800
+#define COL_LEN 600
 
 #define UPD_COUNT 3
 
@@ -74,6 +78,7 @@ extern int updateEna;
 #define INITIAL_COLUMN_INDEX 3
 #define DIGIT_COLUMNS 3
 #define MAX_DIGITS 6
+#define SEGMENTS 7
 #define SEG_ROWS 6
 #define DELTA_OFS 5
 
@@ -85,15 +90,19 @@ extern int DIGIT_THRESHOLD;
 
 #define MAX_PIXEL 255
 
-int drawTargetFlag;
+int targetUpdFlag;		/* target updated flag */
+int drawTargetErrFlag;		/* draw target error */
+int drawTargetDbgFlag;		/* draw target dbg */
+
+uint8_t targetArray[ROW_LEN * COL_LEN];
 
 int targetRows[2];
 int targetCols[2];
 
+int segCol0[MAX_COL];
 int segCol1[MAX_COL];
-int segCol2[MAX_COL];
 
-int *seg[] = {segCol1, segCol2};
+int *seg[] = {segCol0, segCol1};
 
 void getSegColumn(int *segCol, int n, int index)
 {
@@ -102,6 +111,18 @@ void getSegColumn(int *segCol, int n, int index)
   printf("getSegColumn %d\n", n);
  for (int i = 0; i < n; i++)
   *segCol++ = *segColumn++;
+}
+
+int avgPixel0[ROW_LEN];
+int avgPixel1[ROW_LEN];
+
+int *avgPixelData[] = {avgPixel0, avgPixel1};
+
+void getAvgPixel(uint8_t *array, int n, int index)
+{
+ int *avgPixel = avgPixelData[index];
+ for (int i = 0; i < n; i++)
+  *array++ = (uint8_t) (*avgPixel++);
 }
 
 typedef struct sLcdShape
@@ -145,6 +166,12 @@ typedef struct sUpdShape
 
 T_UPD_SHAPE updShape;
 
+typedef struct sSegData
+{
+ int start;
+ int offset;
+} T_SEG_DATA, *P_SEG_DATA;
+
 typedef struct sDigitData
 {
  int strCol[2];
@@ -156,10 +183,15 @@ typedef struct sDigitData
  int maxRow;
  int topRow;
  int botRow;
- int rowRange;
+ int rrT;
+ int rrC;
+ int rrB;
 
  int dirStart;
  int dirEnd;
+
+ T_SEG_DATA segments[SEGMENTS];
+ int result;
 } T_DIGIT_DATA, *P_DIGIT_DATA;
 
 #define TOP_SEG 0.3
@@ -273,6 +305,27 @@ char *timeStr(char *buf, int len)
  return buf;
 }
 
+void dbgSet(int index, int val)
+{
+ switch (index)
+ {
+ case 0:
+  dbg0 = val;
+  break;
+
+ case 1:
+  dbg1 = val;
+  break;
+
+ case 2:
+  dbg2 = val;
+  break;
+
+ default:
+  break;
+ }
+}
+
 void setRef(uint8_t *array, int n, int w, int h)
 {
  shape.rArray = array;
@@ -377,7 +430,7 @@ void getSize(int *hVal, int *wVal, int *tRowVal, int *bRowVal)
   
 void printShape(void)
 {
- printf("t %3d b %3d ", shape.top, shape.bottom);
+ printf("c t %3d b %3d ", shape.top, shape.bottom);
  printf("l %3d r %3d ", shape.left, shape.right);
  printf("w %3d h %3d s %5d ",
 	shape.width, shape.height, shape.width * shape.height);
@@ -533,8 +586,9 @@ void updateSegRows(P_DIGIT_DATA data)
 
  data->topRow = (segRows[1] + segRows[2]) / 2;
  data->botRow = (segRows[3] + segRows[4]) / 2;
- data->rowRange = (data->topRow - segRows[1] +
-		    (int) (1.5 * segRows[1] - segRows[0]));
+ data->rrT = data->topRow - data->segRows[0];
+ data->rrC = segRows[3] - data->topRow;
+ data->rrB = segRows[5] - data->botRow;
 }
 
 void setDirRows(int dirStart, int dirEnd, int index)
@@ -568,6 +622,14 @@ void getDirRows(int *rDirStart, int *rDirEnd, int index)
  *rDirEnd = data->dirEnd;
 }
 
+void getSegData(int *start, int *offset, int index, int n)
+{
+ P_DIGIT_DATA data = &digitData[index];
+ P_SEG_DATA p = &data->segments[n];
+ *start = p->start;
+ *offset = p->offset;
+}
+
 void printDigitData(P_DIGIT_DATA data)
 {
  printf("st %3d %3d en %3d %3d seg %2d %2d %2d dir %2d %2d ",
@@ -586,10 +648,10 @@ void prtDigDat(int index)
 
 void printDigitDataC(P_DIGIT_DATA data)
 {
- printf("col %3d %3d cr %2d %2d tr %2d br %2d rr %2d dir %2d %2d\n",
+ printf("col %3d %3d cr %2d %2d tr %2d br %2d rr %2d %2d %2d dir %2d %2d\n",
 	data->col[0], data->col[1],
 	data->colRange[0], data->colRange[1],
-	data->topRow, data->botRow, data->rowRange,
+	data->topRow, data->botRow, data->rrT, data->rrC, data->rrB,
 	data->dirStart, data->dirEnd);
  fflush(stdout);
 }
@@ -717,9 +779,9 @@ int targetBounds(uint8_t *array, int n, int w, int upd)
 }
 #else
 
-#define SUM_SIZE (4 * 800)
-#define DELTA_SIZE (4 * 800)
-#define ROW_SIZE (4 * 800)
+#define SUM_SIZE (4 * ROW_LEN)
+#define DELTA_SIZE (4 * ROW_LEN)
+#define ROW_SIZE (4 * ROW_LEN)
 
 int tbData[SUM_SIZE + DELTA_SIZE + ROW_SIZE];
 int tbIndex;
@@ -990,6 +1052,10 @@ void setDigitData(P_DIGIT_DATA data, int st, int en, int n)
 
 T_DIGIT_DATA refDigitData[MAX_DIGITS];
 
+#define AVG_RANGE 2
+#define AVG_SIZE (2 * AVG_RANGE + 1)
+#define SCAN_START 3
+
 void findRefSegments(uint8_t *array, int n, int w)
 {
  int x0 = shape.right;
@@ -1010,16 +1076,63 @@ void findRefSegments(uint8_t *array, int n, int w)
   bool findNeg = true;
   int colCount = 0;
   int rowIndex = rowNum * w + x0;
-  int lastPixel = array[rowIndex - 2];
+  int *avgPixel = avgPixelData[i];
+  // int lastPixel = array[rowIndex - 2];
 
   if (dbg0)
    printf("rowScan %d row %3d %3d\n", i, rowNum, x0);
 
-  for (int col = 3; col < shape.width; col++)
+  int *a = avgPixel;
+  for (int k = 0; k < ROW_LEN; k++)
+   *a++ = 0;
+
+  for (int j = rowNum - AVG_RANGE; j <= (rowNum + AVG_RANGE); j++)
   {
-   int pixel = array[rowIndex - col];
    if (0)
-    printf("%3d %3d p %3d\n", col, x0-col, pixel);
+    printf("row %3d\n", j);
+
+   int rowIndex = j * w + x0;
+   int *a0 = &avgPixel[x0];
+   uint8_t *a1 = &array[rowIndex];
+   for (int col = 0; col < shape.width; col++)
+   {
+    // avgPixel[x0 - col] += array[rowIndex - col];
+    *a0 += *a1;
+    a0 -= 1;
+    a1 -= 1;
+   }
+  }
+
+  a = avgPixel;
+  for (int k = 0; k < ROW_LEN; k++)
+   *a++ /=  AVG_SIZE;
+
+  if (0)
+  {
+   dumpBuf(avgPixel, ROW_LEN);
+   printf("\n");
+  }
+
+  // for (int col = 3; col < shape.width; col++)
+  // {
+  //  int pixel = array[rowIndex - col];
+  //  if (0)
+  //   printf("%3d %3d p %3d\n", col, x0-col, pixel);
+
+  a = &avgPixel[x0 - SCAN_START];
+  int lastPixel = *(a + 1);
+  for (int col = SCAN_START; col < shape.width; col++)
+  {
+   int pixel = *a;
+   a -= 1;
+
+   if (0)
+   {
+    int tmp = array[rowIndex - col];
+    printf("%3d index %3d avg %3d pixel %3d d %3d colCount %2d\n",
+	   col, x0-col, pixel, tmp, pixel-tmp, colCount);
+   }
+
    if (findNeg)
    {
     if (pixel <= DIGIT_THRESHOLD && lastPixel >= DIGIT_THRESHOLD)
@@ -1173,6 +1286,7 @@ void findRefSegments(uint8_t *array, int n, int w)
       }
      }
 
+#if 0     
      lastPixel = MAX_PIXEL;
      int end = dirEnd;
      for (int row = dirStart; row < end; row++)
@@ -1184,6 +1298,19 @@ void findRefSegments(uint8_t *array, int n, int w)
       }
       lastPixel = pixel;
      }
+#else
+     lastPixel = 0;
+     for (int row = dirEnd; row < dirStart; --row)
+     {
+      int pixel = array[(row + y0) * w + centerCol];
+      if (pixel <= DIGIT_THRESHOLD && lastPixel >= DIGIT_THRESHOLD)
+      {
+       dirEnd = row;
+       break;
+      }
+      lastPixel = pixel;
+     }
+#endif
      
      data->dirStart = dirStart;
      data->dirEnd = dirEnd;
@@ -1340,53 +1467,132 @@ typedef struct
 T_READ_RESULT readSegments(uint8_t *array, int n, int index)
 {
  P_DIGIT_DATA data = &digitData[index];
+
+ P_SEG_DATA p = data->segments;
+ for (int i = 0; i < SEGMENTS; i++)
+ {
+  p->start = 0;
+  p->offset = 0;
+  p += 1;
+ }
+ p = data->segments;
+  
  int x0 = shape.right;
  int y0 = shape.top;
  int w = shape.tArrayW;
+ // printf("x0 %3d y0 %3d w %3d ", x0, y0, w);
 
  int tr = (data->topRow + y0) * w;
  int br = (data->botRow + y0) * w;
+ // printf("tr %2d %6d br %2d %6d ", data->topRow, tr, data->botRow, br);
 
  int result = 0;
  int colT = x0 - data->col[0];
  int crT = data->colRange[0];
+
+ // printf("colT %3d crT %2d ", colT, crT);
+
  for (int i = 0; i < crT; i++)
  {
   if (array[tr + colT + i] < DIGIT_THRESHOLD)
+  {
+   if (p[1].start == 0)
+   {
+    p[1].start = tr + colT;
+    p[1].offset = i;
+   }
    result |= 0x02;
+  }
 
   if (array[tr + colT - i] < DIGIT_THRESHOLD)
+  {
+   if (p[5].start == 0)
+   {
+    p[5].start = tr + colT;
+    p[5].offset = -i;
+   }
    result |= 0x20;
+  }
  }
 
  int colB = x0 - data->col[1];
  int crB = data->colRange[1];
+ // printf("colB %3d crB %2d ", colB, crB);
  for (int i = 0; i < crB; i++)
  {
   if (array[br + colB + i] < DIGIT_THRESHOLD)
+  {
+   if (p[2].start == 0)
+   {
+    p[2].start = br + colB;
+    p[2].offset = i;
+   }
    result |= 0x04;
+  }
 
   if (array[br + colB - i] < DIGIT_THRESHOLD)
+  {
+   if (p[4].start == 0)
+   {
+    p[4].start = br + colB;
+    p[4].offset = -i;
+   }
    result |= 0x10;
+  }
  }
 
  int trc = tr + colT;
  int brc = br + colB;
- int rr = data->rowRange;
+ int rr = data->rrT;
+ // printf("trc %6d brc %6d rr %2d ", trc, brc, rr);
  for (int i = 0; i < rr; i++)
  {
   int r0 = i * w;
 
   if (array[trc - r0] < DIGIT_THRESHOLD)
+  {
+   if (p[0].start == 0)
+   {
+    p[0].start = trc;
+    p[0].offset = -r0;
+   }
    result |= 0x01;
-  
-  if (array[trc + r0] < DIGIT_THRESHOLD)
-   result |= 0x40;
-  
-  if (array[brc + r0] < DIGIT_THRESHOLD)
-   result |= 0x08;
+  }
  }
-// return(result);
+  
+ rr = data->rrC;
+ for (int i = 0; i < rr; i++)
+ {
+  int r0 = i * w;
+
+  if (array[trc + r0] < DIGIT_THRESHOLD)
+  {
+   if (p[6].start == 0)
+   {
+    p[6].start = trc;
+    p[6].offset = r0;
+   }
+   result |= 0x40;
+  }
+ }
+  
+ rr = data->rrB;
+ for (int i = 0; i < rr; i++)
+ {
+  int r0 = i * w;
+
+  if (array[brc + r0] < DIGIT_THRESHOLD)
+  {
+   if (p[3].start == 0)
+   {
+    p[3].start = brc;
+    p[3].offset = r0;
+   }
+   result |= 0x08;
+  }
+ }
+ data->result = result;
+ // printf("result %02x\n", result);
  
  T_READ_RESULT readResult;
  readResult.segVal = result;
@@ -1492,7 +1698,7 @@ void updateReading(int val)
   {
    int meter = m.meterVal[nxtCtr];
    int delta = meter == 0 ? 0 : val - meter;
-   drawTargetFlag = (abs(delta) > 1);
+   drawTargetErrFlag = (abs(delta) > 1);
    char buf[24];
    printf("%s %d v %6d m %6d d %2d n %5d r %5d f %5d\n",
 	  timeStr(buf, sizeof(buf)), nxtCtr, val, meter, delta,
@@ -1500,6 +1706,8 @@ void updateReading(int val)
    if (abs(delta) <= 1)
    {
     m.ctr = nxtCtr;
+    if (dbg2)
+     drawTargetDbgFlag = 1;
     m.meterVal[nxtCtr] = val;
     if (delta != 0)
     {
@@ -1595,6 +1803,11 @@ int updateDirection(int dirIndex, int *dirError)
  }
  return dirIndex;
 }
+
+void getArray(uint8_t *cArray, int n)
+{
+ memcpy((void *) cArray, (void *) targetArray, n);
+}
  
 void readDisplay(uint8_t *array, int n, int *val,
 		 int *dirIndex, int *dirVal)
@@ -1603,10 +1816,14 @@ void readDisplay(uint8_t *array, int n, int *val,
  int meterMult = 1;
  int dirV = 0;
  int dirM = 1;
+
+ memcpy((void *) targetArray, (void *) array, n);
+
  for (int i = 0; i < 6; i++)
  {
 #if 1
   T_READ_RESULT readResult = readSegments(array, n, i);
+  // printf("segVal = %2x\n", readResult.segVal);
   int result = decode(readResult.segVal);
   meterVal += meterMult * result;
 #else
@@ -1617,7 +1834,7 @@ void readDisplay(uint8_t *array, int n, int *val,
 #endif
   meterMult *= 10;
 
-//  result = readDirection(array, n, i);
+  // result = readDirection(array, n, i);
   result = readResult.dirVal;
   if (result != 0)
    dirV |= dirM;
@@ -1640,9 +1857,21 @@ void loopSync(void)
  m.lastTmp = -1;
 }
 
-int drawTarget(void)
+int drawTargetUpd(void)
 {
- return(drawTargetFlag);
+ return(targetUpdFlag);
+}
+
+int drawTargetErr(void)
+{
+ return(drawTargetErrFlag);
+}
+
+int drawTargetDbg(void)
+{
+ int tmp = drawTargetDbgFlag;
+ drawTargetDbgFlag = 0;
+ return(tmp);
 }
 
 int loopProcess(uint8_t *array, int n)
@@ -1664,8 +1893,8 @@ int loopProcess(uint8_t *array, int n)
   m.delta = 0;
   if (shape.update)
   {
-   int update = targetBounds(array, n, shape.rArrayW, true);
-   if (update)
+   targetUpdFlag = targetBounds(array, n, shape.rArrayW, true);
+   if (targetUpdFlag)
     findRefSegments(array, n, shape.rArrayW);
    else
     shape.update = false;
