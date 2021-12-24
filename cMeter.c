@@ -1286,23 +1286,28 @@ void findRefSegments(uint8_t *array, int n, int w)
       }
      }
 
-#if 0     
+#if 1
      lastPixel = MAX_PIXEL;
      int end = dirEnd;
+     // printf("%d dirStart %2d dirEnd %2d\n", j, dirStart, dirEnd);
      for (int row = dirStart; row < end; row++)
      {
       int pixel = array[(row + y0) * w + centerCol];
+      // printf("%2d pixel %3d lastPixel %3d\n", row, pixel, lastPixel);
       if (pixel <= DIGIT_THRESHOLD && lastPixel >= DIGIT_THRESHOLD)
       {
        dirEnd = row - 1;
+       // printf("dir %2d\n", dirEnd);
       }
       lastPixel = pixel;
      }
 #else
      lastPixel = 0;
-     for (int row = dirEnd; row < dirStart; --row)
+     printf("%d dirEnd %2d dirStart %2d\n", j, dirEnd, dirStart);
+     for (int row = dirEnd; row > dirStart; --row)
      {
       int pixel = array[(row + y0) * w + centerCol];
+      printf("%2d pixel %3d lastPixel %3d\n", row, pixel, lastPixel);
       if (pixel <= DIGIT_THRESHOLD && lastPixel >= DIGIT_THRESHOLD)
       {
        dirEnd = row;
@@ -1859,7 +1864,9 @@ void loopSync(void)
 
 int drawTargetUpd(void)
 {
- return(targetUpdFlag);
+ int tmp = targetUpdFlag;
+ targetUpdFlag = 0;
+ return(tmp);
 }
 
 int drawTargetErr(void)

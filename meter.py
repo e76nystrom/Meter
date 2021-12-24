@@ -145,6 +145,18 @@ def coord(loc, w):
     col = loc % w
     return (col, row)
 
+
+def cmGetData():
+    cmShape = LcdShape()
+    cmShape.cmGet()
+
+    cmData = []
+    for index in range(MAX_DIGITS):
+        data = DigitData(0, 0)
+        cmData.append(data)
+        data.cmGet(index)
+    return (cmShape, cmData)
+
 class LcdShape():
     def __init__(self, array=None, dbg=False):
         self.dbg = dbg
@@ -488,7 +500,7 @@ class Meter():
                     # print(" > delta %4d maxVal %4d" % \
                     #       (delta, maxVal), end="")
                     maxVal = delta
-                    maxRow = rowLast
+                    maxRow = row
             else:
                 skip -= 1
             rowLast += 1
@@ -583,7 +595,7 @@ class Meter():
         (cr, lc, rc, rr, tr, br) = self.tbVars(lcdShape)
 
         fig, axs = plt.subplots(3)
-        fig.suptitle("Plot" + ttl + " targetBounds")
+        fig.suptitle("Plot " + ttl + " targetBounds")
         fig.set_figwidth(2 * fig.get_figwidth())
         fig.set_figheight(3 * fig.get_figheight())
         
@@ -719,7 +731,7 @@ class Meter():
                 else:
                     if delta < endVal:
                         endVal = delta
-                        rows[1] = row - DELTA_OFS
+                        rows[1] = row
                         if self.dbg[2]:
                             print(">%2d row %3d sum %3d delta %3d" % \
                                   (i, row, sumArray[i], delta))
@@ -815,7 +827,7 @@ class Meter():
         b = lcdShape.botRow + y0
 
         fig, axs = plt.subplots(2, sharex=True)
-        title = "Plot"  + ttl + " findRefSegments Horizontal" + \
+        title = "Plot "  + ttl + " findRefSegments Horizontal" + \
             (" Linux" if LINUX else "")
         fig.suptitle(title)
         fig.set_figwidth(3 * fig.get_figwidth())
@@ -1684,7 +1696,6 @@ class Meter():
 
             if LINUX:
                 lcdShape.cmSet()
-                lcdShape.print()
                 dirError = cm.loopProcess(targetArray.ravel())
                 if dirError != 0:
                     if self.draw and (self.dirError < 100):
@@ -1694,13 +1705,15 @@ class Meter():
                 else:
                     dirErrCount = 0
 
-                if True:
+                if False:
                     self.segDraw(name="segDraw-" + timeStr())
 
                 if self.dbg[4] and cm.drawTargetUpd():
                     if (self.maxUpdCnt == 0) or \
                        (self.drwUpdCnt < self.maxUpdCnt):
-                        self.tDraw(targetArray, lcdShape, digitdata,
+
+                        (cmShape, cmData) = cmGetData()
+                        self.tDraw(targetArray, cmShape, cmData,
                                    name=(("tUpd-%03d-" % (self.drwUpdCnt)) + \
                                          timeStr()))
                         self.drwUpdCnt += 1
@@ -1708,7 +1721,9 @@ class Meter():
                 if self.dbg[5] and cm.drawTargetErr():
                     if (self.maxErrCnt == 0) or \
                        (self.drwErrCnt < self.maxErrCnt):
-                        self.tDraw(targetArray, lcdShape, digitData, \
+
+                        (cmShape, cmData) = cmGetData()
+                        self.tDraw(targetArray, cmShape, cmData, \
                                    name=(("tErr-%03d-" % (self.drwErrCnt)) + \
                                          timeStr()))
                         self.drwErrCnt += 1
@@ -1716,21 +1731,9 @@ class Meter():
                 if self.cDbg2 and cm.drawTargetDbg():
                     if (self.maxDbgCnt == 0) or \
                        (self.drwDbgCnt < self.maxDbgCnt):
-                        tmpShape = LcdShape()
-                        tmpShape.cmGet()
-                        tmpShape.print()
 
-                        tmpData = []
-                        for index in range(MAX_DIGITS):
-                            data = DigitData(0, 0)
-                            tmpData.append(data)
-                            data.cmGet(index)
-
-                        for data in tmpData:
-                            data.print()
-                            data.printC()
-
-                        self.tDraw(targetArray, tmpShape, tmpData,
+                        (cmShape, cmData) = cmGetData()
+                        self.tDraw(targetArray, cmShape, cmData,
                                    name=(("tDbg-%03d-" % (self.drwDbgCnt)) + \
                                          timeStr()))
                         self.drwDbgCnt += 1
