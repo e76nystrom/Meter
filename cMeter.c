@@ -586,7 +586,7 @@ void updateSegRows(P_DIGIT_DATA data)
 
  data->topRow = (segRows[1] + segRows[2]) / 2;
  data->botRow = (segRows[3] + segRows[4]) / 2;
- data->rrT = data->topRow - data->segRows[0];
+ data->rrT = data->topRow - segRows[0];
  data->rrC = segRows[3] - data->topRow;
  data->rrB = segRows[5] - data->botRow;
 }
