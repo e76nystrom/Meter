@@ -16,6 +16,7 @@ from datetime import datetime
 from pytz import timezone
 from http.client import IncompleteRead
 from urllib.error import URLError
+from http.client import RemoteDisconnected
 
 # from collections import namedtuple
 
@@ -1724,6 +1725,8 @@ class Meter():
                     print("**%s!socket.timeout retry %d" % (timeStr(), retry))
                 except URLError:
                     print("**%s!URLError retry %d" % (timeStr(), retry))
+                except RemoteDisconnected:
+                    print("**%s!RemoteDisconnected retry %d" % (timeStr(), retry))
                 sys.stdout.flush()
                 retry -= 1
                 if retry <= 0:
