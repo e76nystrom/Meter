@@ -4,6 +4,7 @@
 import os
 import sys
 import numpy as np
+import math
 import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw, ImageOps, ImageColor
 from time import sleep
@@ -64,6 +65,28 @@ DIGIT_COLUMNS = 3
 MAX_DIGITS = 6
 SEG_ROWS = 6
 SEGMENTS = 7
+
+# find label constants
+
+LAB_COL_DELTA_OFS = 3
+LAB_COL_DELTA_THR = 25
+
+LAB_ROW_THR = 110
+LAB_ROW_LIM = -40
+LAB_ROW_OFS = 3
+LAB_ROW_AVG = 7
+
+# read label constants
+
+LAB_READ_THR = 140
+LAB_SCAN_W = 3
+
+REF = 0
+NET = 1
+FWD = 2
+REV = 3
+
+label = ("Ref", "Net", "Fwd", "Rev")
 
 FALSE = 0
 TRUE = 1
@@ -185,6 +208,15 @@ class LcdShape():
         self.left = 0
         self.right = 0
 
+        self.labLeft = 0
+        self.labRight = 0
+        self.labTop = 0
+        self.labMid = 0
+        self.labBot = 0
+
+        self.labCol = None
+        self.labChar = [None, None]
+        
     def setTarget(self, array):
         self.tArray = array
         self.tArrayH = len(array)
@@ -322,7 +354,7 @@ def digitDataCopy():
 
 class Meter():
     def __init__(self):
-        self.plot = [False for element in range(9 + 1)]
+        self.plot = [False for element in range(12 + 1)]
 
         self.save = False           # save figure
 
@@ -386,46 +418,58 @@ class Meter():
                 ch = val[0]
                 if ch == 'p':
                     val = int(val[1:])
-                    if val == 1:
-                        self.plot[1] = True # row histogram
-                    elif val == 2:
-                        self.plot[2] = True # row sum array
-                    elif val == 3:
-                        self.plot[3] = True # upper and lower row
-                    elif val == 4:
-                        self.plot[4] = True # reference rows
-                    elif val == 5:
-                        self.plot[5] = True # digit columns
-                    elif val == 6:
-                        self.plot[6] = True # direction
-                    elif val == 7:
-                        self.plot[7] = True # target center column
-                    elif val == 8:
-                        self.plot[8] = True # target bounds
-                    elif val == 9:
-                        self.plot[9] = True # target bounds
+                    if val < len(self.plot):
+                        self.plot[val] = True
+                    # if val == 1:
+                    #     self.plot[1] = True # row histogram
+                    # elif val == 2:
+                    #     self.plot[2] = True # row sum array
+                    # elif val == 3:
+                    #     self.plot[3] = True # upper and lower row
+                    # elif val == 4:
+                    #     self.plot[4] = True # reference rows
+                    # elif val == 5:
+                    #     self.plot[5] = True # digit columns
+                    # elif val == 6:
+                    #     self.plot[6] = True # direction
+                    # elif val == 7:
+                    #     self.plot[7] = True # target center column
+                    # elif val == 8:
+                    #     self.plot[8] = True # target bounds
+                    # elif val == 9:
+                    #     self.plot[9] = True # target bounds
+                    # elif val == 10:
+                    #     self.plot[10] = True # find label columns
+                    # elif val == 11:
+                    #     self.plot[11] = True # find label rows
+                    # elif val == 12:
+                    #     self.plot[12] = True # find label rows
                 elif ch == 'd':
                     val = int(val[1:])
-                    if val == 0:
-                        self.dbg[0] = True # general debug
-                    elif val == 1:
-                        self.dbg[1] = True # top and bottom
-                    elif val == 2:
-                        self.dbg[2] = True # right and left
-                    elif val == 3:
-                        self.dbg[3] = True
-                    elif val == 4:
-                        self.dbg[4] = True # draw target updated
-                    elif val == 5:
-                        self.dbg[5] = True # draw on error
+                    if val < len(self.dbg):
+                        self.dbg[val] = True
+                    # if val == 0:
+                    #     self.dbg[0] = True # general debug
+                    # elif val == 1:
+                    #     self.dbg[1] = True # top and bottom
+                    # elif val == 2:
+                    #     self.dbg[2] = True # right and left
+                    # elif val == 3:
+                    #     self.dbg[3] = True
+                    # elif val == 4:
+                    #     self.dbg[4] = True # draw target updated
+                    # elif val == 5:
+                    #     self.dbg[5] = True # draw on error
                 elif ch == 'C':
                     val = int(val[1:])
-                    if val == 0:
-                        self.cDbg0 = True
-                    elif val == 1:
-                        self.cDbg1 = True
-                    elif val == 2:
-                        self.cDbg2 = True
+                    if val < len(self.cDbg):
+                        self.cDbg[val] = True
+                    # if val == 0:
+                    #     self.cDbg0 = True
+                    # elif val == 1:
+                    #     self.cDbg1 = True
+                    # elif val == 2:
+                    #     self.cDbg2 = True
                 elif ch == 'c':
                     self.capture = True
                 elif ch == 'r':
@@ -1228,6 +1272,241 @@ class Meter():
 
         return digitData
 
+    def findLabel(self, lcdShape, digitData):
+        x0 = lcdShape.right
+        y0 = lcdShape.top
+        data = digitData[-1]
+        lcdShape.labRight = data.endCol[0]
+        lcdShape.labLeft = lcdShape.width
+        print("findLabel right %3d left %3d" % \
+              (lcdShape.labRight, lcdShape.labLeft))
+
+        array = self.refArray
+
+        lWidth = lcdShape.labLeft - lcdShape.labRight
+        c0 = x0 - lcdShape.labRight
+                     
+        # average columns in label area
+
+        colAvg = [0 for i in range(lWidth)]
+        for c in range(lWidth):
+            col = c0 - c
+            avgSum = 0
+            for r in range(lcdShape.height):
+                row = r + y0
+                pixel = array[row][col]
+                avgSum += pixel
+            colAvg[c] = avgSum // lcdShape.height
+
+        # find boundaries
+
+        colDelta = [0 for i in range(lWidth)]
+        minVal = MAX_PIXEL
+        findMin = True
+        labelCol = []
+        colLast = 0
+        for col in range(LAB_COL_DELTA_OFS, lWidth):
+            delta = colAvg[col] - colAvg[colLast]
+            colDelta[col] = delta
+            colLast += 1
+            if findMin:
+                if delta < minVal:
+                    minVal = delta
+                    minCol = colLast
+                if delta > LAB_COL_DELTA_THR:
+                    labelCol.append((minCol, minVal))
+                    findMin = False
+                    maxVal = -MAX_PIXEL
+            else:
+                if delta > maxVal:
+                    maxVal = delta
+                    maxCol = col
+                if delta < LAB_COL_DELTA_THR:
+                    labelCol.append((maxCol, maxVal))
+                    findMin = True
+                    minVal = MAX_PIXEL
+                    if len(labelCol) >= 4:
+                        break
+
+        # set locations of characters
+        
+        print(labelCol)
+        lcdShape.labCol = labelCol
+        l = lcdShape.labRight
+        lcdShape.labChar[0] = (l + labelCol[3][0], l + labelCol[2][0])
+        lcdShape.labChar[1] = (l + labelCol[1][0], l + labelCol[0][0])
+
+        # scan rows to find horizontal segments
+
+        h = lcdShape.height
+        rowAvg = []
+        rowDelta = []
+        rowMin = []
+        for i in range(2):
+            (st, en) = lcdShape.labChar[i]
+
+            w = LAB_ROW_AVG
+            mn = w // 2
+            mx = w - mn
+            cent = (st + en) // 2
+            avg = []
+            for r in range(h):
+                row = r + y0
+                avgSum = 0
+                for c in range(cent - mn, cent + mx):
+                    col = x0 - c
+                    pixel = array[row][col]
+                    avgSum += pixel
+                avg.append(avgSum // w)
+            rowAvg.append(avg)
+
+            minRow = None
+            rowLen = len(self.rowArray)
+            findMin = False
+            deltaSave = []
+            lastRow = 0
+            rowSave = []
+            lastVal = 0
+            for r in range(LAB_ROW_OFS, h):
+                val = avg[r]
+                delta = val - avg[lastRow]
+                deltaSave.append(delta)
+
+                if findMin:
+                    if (val >= LAB_ROW_THR) and (lastVal <= LAB_ROW_THR):
+                        if minRow != None:
+                            rowSave.append(minRow)
+                            if len(rowSave) >= 5:
+                                break
+                        findMin = False
+                else:
+                    if (val <= LAB_ROW_THR) and (lastVal >= LAB_ROW_THR):
+                        minVal = MAX_PIXEL
+                        minRow = 0
+                        findMin = True
+
+                if findMin:
+                    if val < minVal:
+                        minVal = val
+                        minRow = r
+                lastVal = val
+                lastRow += 1
+            rowDelta.append(deltaSave)
+            rowMin.append(rowSave)
+            print(rowSave)
+        lcdShape.labRowMin = rowMin
+
+        # save horizontal segment positions
+                    
+        lcdShape.labTop = lcdShape.labRowMin[0][0]
+        lcdShape.labMid = lcdShape.labRowMin[0][2]
+        lcdShape.labBot = lcdShape.labRowMin[0][4]
+        lcdShape.labHeight = lcdShape.labBot - lcdShape.labTop
+
+        if self.draw:
+            self.drawLabel(array, lcdShape)
+        
+        if self.plot[10]:
+            self.drawPlot10(lcdShape, colAvg)
+
+        if self.plot[11]:
+            self.drawPlot11(lcdShape, rowAvg)
+
+    def drawLabel(self, array, lcdShape, name="label"):
+        x0 = lcdShape.right
+        x1 = lcdShape.left
+        y0 = lcdShape.top
+        y1 = lcdShape.bottom
+
+        l = x0 - lcdShape.width
+        r = x0
+
+        fill0 = ImageColor.getrgb("red")
+        fill1 = ImageColor.getrgb("blue")
+
+        image = self.rgbImage(array)
+        labelDraw = image.copy()
+        d = ImageDraw.Draw(labelDraw).line
+        d(((x0, y0), (x1, y0), (x1, y1), (x0, y1), (x0, y0)), fill=fill0)
+
+        d(((x0 - lcdShape.labRight, y0), (x0 - lcdShape.labRight, y1)), \
+          fill=fill1)
+        d(((x0 - lcdShape.labLeft, y0), (x0 - lcdShape.labLeft, y1)), \
+          fill=fill1)
+
+        for i, (st, en) in enumerate(lcdShape.labChar):
+            rowMin = lcdShape.labRowMin[i]
+            for r in rowMin:
+                d(((x0 - st, y0 + r), (x0 - en, y0 + r)), fill=fill0)
+
+            d(((x0 - st, y0 + rowMin[0]), (x0 - st, y0 + rowMin[4])), \
+              fill=fill1)
+            d(((x0 - en, y0 + rowMin[0]), (x0 - en, y0 + rowMin[4])), \
+              fill=fill1)
+
+        labelDraw.save(name + "1.png", "PNG")
+
+    def drawPlot10(self, lcdShape, colAvg):
+        fig, axs = plt.subplots(2)
+        fig.suptitle("Plot 10 Label Column Average")
+        # fig.suptitle("Plot " + ttl + " targetBounds")
+        fig.set_figwidth(2 * fig.get_figwidth())
+        fig.set_figheight(2 * fig.get_figheight())
+
+        axs[0].plot(colAvg)
+        x = []
+        y = []
+        for (col, val) in lcdShape.labCol:
+            val = colAvg[col]
+            x.append(col)
+            y.append(100)
+            x.append(col)
+            y.append(val)
+            x.append(col)
+            y.append(100)
+        axs[0].plot(x, y)
+
+        axs[1].plot(colDelta)
+        x = []
+        y = []
+        lastVal = 0
+        for (col, val) in lcdShape.labCol:
+            x.append(col)
+            y.append(lastVal)
+            x.append(col)
+            y.append(val)
+            lastVal = val
+        axs[1].plot(x, y)
+
+        if True or self.save:
+            fig.savefig("plot10.png")
+        else:
+            plt.show()
+        plt.close()
+
+    def drawPlot11(self, lcdShape, rowAvg):
+        fig, axs = plt.subplots(2, 2)
+        fig.suptitle("Plot 11 Label Row Average")
+        fig.set_figwidth(2 * fig.get_figwidth())
+        fig.set_figheight(2 * fig.get_figheight())
+
+        for i in range(2):
+            axs[0][i].plot(rowAvg[i])
+            axs[0][i].plot((0, len(rowAvg[i])), (LAB_ROW_THR, LAB_ROW_THR))
+            axs[1][i].plot(rowDelta[i])
+            axs[1][i].plot((0, len(rowDelta[i])), (LAB_ROW_LIM, LAB_ROW_LIM))
+            x = []
+            y = []
+            for r in rowMin[i]:
+                axs[0][i].plot((r, r), (0, 100))
+                axs[1][i].plot((r, r), (0, -150))
+                
+        if True or self.save:
+            fig.savefig("plot11.png")
+        else:
+            plt.show()
+        plt.close()
+
     #   --0--
     #   |   |
     #   5   1
@@ -1577,7 +1856,124 @@ class Meter():
         else:
             plt.show()
 
+    def readLabel(self, array, lcdShape):
+        x0 = lcdShape.right
+        y0 = lcdShape.top
+
+        (charL, charR) =  lcdShape.labChar[0]
+        charL = x0 - charL
+        charR = x0 - charR
+
+        if self.plot[12]:
+            self.drawPlot12(array, lcdShape)
+
+        # average top and bottom right vertical segments
+        
+        t = y0 + lcdShape.labTop
+        b = y0 + lcdShape.labBot
+
+        w = LAB_SCAN_W
+        mn = w // 2
+        mx = w - mn
+        m = y0 + lcdShape.labMid
+        avgT = 0
+        avgB = 0
+        for c in range(charR - mn, charR + mx):
+            for r in range(t, m):
+                avgT += array[r][c]
+            for r in range(m, b):
+                avgB += array[r][c]
+        avgT //= w * (m - t)
+        avgB //= w * (b - m)
+
+        # averaget bottom horizontal segment
+
+        avgL = 0
+        for c in range(charL, charR):
+            for r in range(b - mn, b + mx):
+                avgL += array[r][c]
+        avgL //= w * (charR - charL)
+
+        # decode label from segments
+        
+        if avgL < LAB_READ_THR:
+            val = REF
+        else:
+            if avgT > LAB_READ_THR:
+                val = FWD
+            else:
+                if avgB < LAB_READ_THR:
+                    val = NET
+                else:
+                    val = REV
+        print("val %d %s avgT %3d avgB %3d avgL %3d" % \
+              (val, label[val], avgT, avgB, avgL))
+
+        if self.draw:
+            self.drawReadLabel(array, lcdShape)
+        return val
+
+    def drawPlot12(self, array, lcdShape):
+        PLOT_ROWS = 3
+        PLOT_COLS = 3
+        fig, axs = plt.subplots(PLOT_ROWS, PLOT_COLS, sharex=True)
+        fig.suptitle("Plot 12 readDisplay Label")
+        axs = list(np.concatenate(axs).flat)
+        fig.set_figheight(PLOT_ROWS * fig.get_figheight())
+        fig.set_figwidth(PLOT_COLS * fig.get_figwidth())
+
+        x0 = lcdShape.right
+        y0 = lcdShape.top
+
+        (charL, charR) =  lcdShape.labChar[0]
+        charL = x0 - charL
+        charR = x0 - charR
+
+        nPerPlot = int(math.ceil((charR - charL) / (PLOT_ROWS * PLOT_COLS)))
+        i = 0
+        j = 0
+        t = y0 + lcdShape.labTop
+        b = y0 + lcdShape.labBot
+        h = b - t
+        data = np.empty(h, np.uint8)
+        for c in range(charL, charR):
+            k = 0
+            for r in range(t, b):
+                pixel =  array[r][c]
+                data[k] = pixel
+                k += 1
+            if j == 0:
+                tmp = i * nPerPlot
+                axs[i].set_title("c %2d-%2d" % (tmp, tmp + nPerPlot - 1))
+            axs[i].plot(data)
+            j += 1
+            if j >= nPerPlot:
+                j = 0
+                i += 1
+
+        if self.save:
+            fig.savefig("plot12.png")
+        else:
+            plt.show()
+
+    def drawReadLabel(self, array, lcdShape):
+        rgbImage = self.rgbImage(array)
+        rgbDraw = ImageDraw.Draw(rgbImage)
+        d = rgbDraw.line
+        fill = ImageColor.getrgb("red")
+
+        t = lcdShape.labTop + y0
+        b = lcdShape.labBot + y0
+        for (charL, charR) in lcdShape.labChar:
+            charL = x0 - charL
+            charR = x0 - charR
+            d(((charL, t), (charR, t), (charR, b), \
+               (charL, b), (charL, t),), fill=fill)
+
+        rgbImage.save("labelDraw.png", "PNG")
+
     def readDisplay(self, targetArray, lcdShape, digitData):
+        self.readLabel(targetArray, lcdShape)
         if self.draw:
             self.tDraw(targetArray, lcdShape, digitData)
 
@@ -1726,7 +2122,8 @@ class Meter():
                 except URLError:
                     print("**%s!URLError retry %d" % (timeStr(), retry))
                 except RemoteDisconnected:
-                    print("**%s!RemoteDisconnected retry %d" % (timeStr(), retry))
+                    print("**%s!RemoteDisconnected retry %d" % \
+                          (timeStr(), retry))
                 sys.stdout.flush()
                 retry -= 1
                 if retry <= 0:
@@ -1941,6 +2338,7 @@ class Meter():
 
         print("call self.findRefSegments 1")
         digitData = self.findRefSegments(lcdShape)
+        self.findLabel(lcdShape, digitData)
 
         if LINUX:
             if True:
@@ -2095,4 +2493,3 @@ try:
     meter.process()
 except KeyboardInterrupt:
     pass
-    

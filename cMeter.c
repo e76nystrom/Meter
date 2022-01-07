@@ -199,15 +199,28 @@ typedef struct sDigitData
 
 T_DIGIT_DATA digitData[MAX_DIGITS];
 
-typedef struct
+typedef struct sMeterVal
+{
+ int meterVal;
+ char lastDigits;
+ char digits[MAX_DIGITS];
+} T_METER_VAL, *P_METER_VAL;
+
+typedef struct sMeter
 {
  bool sync;
+ time_t startTime;
+ double curTime;
+ double lastTime;
+ char *lastReading[MAX_DIGITS];
  int lastVal;
+ char *lastTmpRead[MAX_DIGITS];
  int lastTmp;
  int check;
  int ctr;
  int delta;
  int meterVal[4];
+ T_METER_VAL reading[4];
  int lastDir;
  int dirSign;
  int net;
@@ -219,6 +232,13 @@ typedef struct
 } T_METER, *P_METER;
 
 T_METER m;
+
+double getTime()
+{
+ struct timespec t;
+ clock_gettime(CLOCK_REALTIME, &t);
+ return((double) (t.tv_sec - m.startTime) + t.tv_nsec / 1000000000.0);
+}
 
 #if defined(__arm__)
 
@@ -1669,10 +1689,29 @@ int readDirection(uint8_t *array, int n, int index)
 }
 */
 
-void updateReading(int val)
+int checkReading(char *reading, char *lastReading)
+{
+ char dig0 = *reading == *lastReading;
+ *lastReading++ = *reading++;
+ int diff = 0;
+ int count = MAX_DIGITS - 1;
+ while (--count >= 0)
+ {
+  if (*reading != *lastReading)
+   diff += 1;
+  *lastReading++ = *reading++;
+ }
+ return (dig0 && diff == 1);
+}
+
+void updateReading(int val, char *reading)
 {
  if (val != m.lastVal)
  {
+  double t = getTime();
+  if (m.curTime == 0)
+   m.curTime = t;
+  double deltaT = t - m.lastTime;
   if (val != m.lastTmp)
   {
    m.lastTmp = val;
@@ -1695,6 +1734,8 @@ void updateReading(int val)
    {
     shape.update = true;
     m.ctr = nxtCtr;
+    m.lastTime = m.curTime;
+    m.curTime = 0;
    }
    else
     m.sync = false;
@@ -1705,12 +1746,14 @@ void updateReading(int val)
    int delta = meter == 0 ? 0 : val - meter;
    drawTargetErrFlag = (abs(delta) > 1);
    char buf[24];
-   printf("%s %d v %6d m %6d d %2d n %5d r %5d f %5d\n",
-	  timeStr(buf, sizeof(buf)), nxtCtr, val, meter, delta,
+   printf("%s %6.3f %d v %6d m %6d d %2d n %5d r %5d f %5d\n",
+	  timeStr(buf, sizeof(buf)), deltaT, nxtCtr, val, meter, delta,
 	  m.net, m.rev, m.fwd);
    if (abs(delta) <= 1)
    {
     m.ctr = nxtCtr;
+    m.lastTime = m.curTime;
+    m.curTime = 0;
     if (dbg2)
      drawTargetDbgFlag = 1;
     m.meterVal[nxtCtr] = val;
@@ -1815,7 +1858,7 @@ void getArray(uint8_t *cArray, int n)
 }
  
 void readDisplay(uint8_t *array, int n, int *val,
-		 int *dirIndex, int *dirVal)
+		 int *dirIndex, int *dirVal, char *reading)
 {
  int meterVal = 0;
  int meterMult = 1;
@@ -1824,12 +1867,14 @@ void readDisplay(uint8_t *array, int n, int *val,
 
  memcpy((void *) targetArray, (void *) array, n);
 
+ reading += MAX_DIGITS;
  for (int i = 0; i < 6; i++)
  {
 #if 1
   T_READ_RESULT readResult = readSegments(array, n, i);
   // printf("segVal = %2x\n", readResult.segVal);
   int result = decode(readResult.segVal);
+  *--reading = result;
   meterVal += meterMult * result;
 #else
   T_READ_RESULT readResult = readSegments(array, n, i);
@@ -1853,6 +1898,14 @@ void readDisplay(uint8_t *array, int n, int *val,
 void loopInit(void)
 {
  memset((void *) &m, 0, sizeof(m));
+ struct timespec res;
+
+ int val = clock_getres(CLOCK_REALTIME, &res);
+ printf("clock_getres %d tv_sec %d tv_nsec %d\n",
+	val, (int) res.tv_sec, (int) res.tv_nsec);
+
+ clock_gettime(CLOCK_REALTIME, &res);
+ m.startTime = res.tv_sec;
 }
 
 void loopSync(void)
@@ -1887,12 +1940,13 @@ int loopProcess(uint8_t *array, int n)
  int dirIndex;
  int dirVal;
  int dirError = 0;
+ char reading[MAX_DIGITS];
  
- readDisplay(array, n, &val, &dirIndex, &dirVal);
+ readDisplay(array, n, &val, &dirIndex, &dirVal, reading);
  shape.update = false;
  if (m.sync)
  {
-  updateReading(val);
+  updateReading(val, reading);
   dirIndex = updateDirection(dirIndex, &dirError);
   printf("%d %6d 0x%02x %d %2d n %3d f %3d r %3d\n",
 	 m.ctr, val, dirVal, dirIndex, m.delta,
